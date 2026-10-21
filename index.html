@@ -5,10 +5,10 @@ import {
   Settings, HelpCircle, Shield, Sparkles, Activity, Layers, Calendar, Clock,
   ChevronRight, Lock, Unlock, RefreshCw, BookOpen, Share2, CornerDownRight,
   TrendingUp, Compass, Heart, AlertTriangle, FileCheck, Check, LayoutDashboard,
-  BrainCircuit as BrainCircuitIcon
+  BrainCircuit as BrainCircuitIcon, X, Plus
 } from 'lucide-react';
 
-// --- INITIAL PRE-POPULATED DATA ---
+// --- DADOS INICIAIS DE EXEMPLO ---
 const DEFAULT_PROFILE = {
   nome: "Daniele Sousa Santos",
   crp: "22/07398",
@@ -82,7 +82,7 @@ const INITIAL_ANALYSES = [
   }
 ];
 
-// Helper Components
+// --- COMPONENTES AUXILIARES ---
 function NavTab({ active, onClick, icon, children }) {
   return (
     <button
@@ -126,6 +126,7 @@ function StatusBadge({ status }) {
   );
 }
 
+// --- COMPONENTE PRINCIPAL ---
 export default function App() {
   const [profile, setProfile] = useState(DEFAULT_PROFILE);
   const [patients, setPatients] = useState(INITIAL_PATIENTS);
@@ -153,6 +154,7 @@ export default function App() {
   const [patientForm, setPatientForm] = useState({ id: '', nome: '', idade: '', faixaEtaria: 'Adolescente', responsavel: '', notas: '' });
   const [wizardStep, setWizardStep] = useState(1);
 
+  // Carregar do LocalStorage
   useEffect(() => {
     const savedProfile = localStorage.getItem('psi_profile');
     const savedPatients = localStorage.getItem('psi_patients');
@@ -163,6 +165,7 @@ export default function App() {
     if (savedAnalyses) setAnalyses(JSON.parse(savedAnalyses));
   }, []);
 
+  // Salvar no LocalStorage
   const persistData = (newProfile, newPatients, newAnalyses) => {
     setSaveStatus('Salvando...');
     setTimeout(() => {
@@ -183,17 +186,19 @@ export default function App() {
     }, 400);
   };
 
+  // Prevenir saída sem salvar
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (saveStatus === 'Alterações não salvas') {
         e.preventDefault();
-        e.returnValue = 'Você possui alterações não salvas na Análise Funcional. Deseja realmente sair?';
+        e.returnValue = 'Você possui alterações não salvas. Deseja realmente sair?';
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [saveStatus]);
 
+  // Ações de Análise Funcional
   const handleOpenNewMolecular = (patientId = '') => {
     const p = patients.find(item => item.id === patientId) || patients[0];
     const newAna = {
@@ -293,6 +298,50 @@ export default function App() {
     setIsPdfModalOpen(true);
   };
 
+  // Funções para adicionar/remover itens das listas na análise funcional
+  const addAntecedente = () => {
+    setActiveAnalysis({
+      ...activeAnalysis,
+      antecedentes: [...activeAnalysis.antecedentes, { id: `a-${Date.now()}`, descricao: '', tipo: 'Estímulo Discriminativo (SD)' }]
+    });
+  };
+
+  const removeAntecedente = (id) => {
+    setActiveAnalysis({
+      ...activeAnalysis,
+      antecedentes: activeAnalysis.antecedentes.filter(item => item.id !== id)
+    });
+  };
+
+  const addResposta = () => {
+    setActiveAnalysis({
+      ...activeAnalysis,
+      respostas: [...activeAnalysis.respostas, { id: `r-${Date.now()}`, topografia: '', classe: 'Motora / Observável', frequencia: '', intensidade: '' }]
+    });
+  };
+
+  const removeResposta = (id) => {
+    setActiveAnalysis({
+      ...activeAnalysis,
+      respostas: activeAnalysis.respostas.filter(item => item.id !== id)
+    });
+  };
+
+  const addConsequencia = () => {
+    setActiveAnalysis({
+      ...activeAnalysis,
+      consequencias: [...activeAnalysis.consequencias, { id: `c-${Date.now()}`, descricao: '', tempo: 'Imediata', categoria: 'Atenção / Social' }]
+    });
+  };
+
+  const removeConsequencia = (id) => {
+    setActiveAnalysis({
+      ...activeAnalysis,
+      consequencias: activeAnalysis.consequencias.filter(item => item.id !== id)
+    });
+  };
+
+  // Filtros de busca
   const filteredAnalyses = analyses.filter(a => 
     a.tema.toLowerCase().includes(searchQuery.toLowerCase()) ||
     a.pacienteNome.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -311,6 +360,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             
+            {/* Logo */}
             <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setCurrentTab('dashboard')}>
               <div className="w-10 h-10 rounded-xl bg-violet-600 flex items-center justify-center text-white font-bold shadow-md shadow-violet-200">
                 <BrainCircuitIcon className="w-6 h-6" />
@@ -325,11 +375,14 @@ export default function App() {
               </div>
             </div>
 
+            {/* Alternador de Modo de Sessão (Visão do Clínico vs Paciente) */}
             <div className="hidden md:flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
               <button
                 onClick={() => setIsSharedMode(false)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  !isSharedMode ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                  !isSharedMode 
+                    ? 'bg-white text-slate-800 shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <Lock className="w-3.5 h-3.5 text-violet-600" />
@@ -338,7 +391,9 @@ export default function App() {
               <button
                 onClick={() => setIsSharedMode(true)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  isSharedMode ? 'bg-violet-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                  isSharedMode 
+                    ? 'bg-violet-600 text-white shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <Share2 className="w-3.5 h-3.5" />
@@ -346,6 +401,7 @@ export default function App() {
               </button>
             </div>
 
+            {/* Ações Rápidas e Status */}
             <div className="flex items-center space-x-3">
               <div className="hidden sm:flex items-center text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg">
                 <div className={`w-2 h-2 rounded-full mr-2 ${saveStatus === 'Salvo' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
@@ -363,7 +419,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Navigation Tabs */}
+        {/* Abas de Navegação */}
         <div className="bg-slate-50/80 border-t border-slate-200/60 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto flex space-x-1 sm:space-x-4 overflow-x-auto py-1.5 scrollbar-none">
             <NavTab active={currentTab === 'dashboard'} onClick={() => setCurrentTab('dashboard')} icon={<LayoutDashboard className="w-4 h-4" />}>
@@ -389,7 +445,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* SHARED MODE BANNER */}
+      {/* BANNER DO MODO PACIENTE */}
       {isSharedMode && (
         <div className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-4 py-2 text-xs font-medium flex items-center justify-between shadow-inner print:hidden">
           <div className="flex items-center gap-2 max-w-7xl mx-auto w-full">
@@ -402,16 +458,14 @@ export default function App() {
         </div>
       )}
 
-      {/* MAIN CONTENT AREA */}
+      {/* ÁREA DE CONTEÚDO PRINCIPAL */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 print:p-0">
         
-        {/* DASHBOARD TAB */}
+        {/* ABA: DASHBOARD */}
         {currentTab === 'dashboard' && (
           <div className="space-y-6">
+            {/* Banner de Boas-Vindas */}
             <div className="bg-gradient-to-r from-violet-700 via-violet-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-              <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-10 pointer-events-none">
-                <BrainCircuitIcon className="w-72 h-72" />
-              </div>
               <div className="relative z-10">
                 <span className="bg-white/20 backdrop-blur-md text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
                   Sessão Clínica Colaborativa
@@ -443,6 +497,7 @@ export default function App() {
               </div>
             </div>
 
+            {/* Métrica de Atendimentos */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <StatCard title="Pacientes Ativos" value={patients.length} icon={<Users className="w-5 h-5 text-violet-600" />} color="bg-violet-50 text-violet-700" />
               <StatCard title="Análises Totais" value={analyses.length} icon={<Activity className="w-5 h-5 text-indigo-600" />} color="bg-indigo-50 text-indigo-700" />
@@ -450,7 +505,7 @@ export default function App() {
               <StatCard title="Concluídas" value={analyses.filter(a => a.status === 'Concluída').length} icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />} color="bg-emerald-50 text-emerald-700" />
             </div>
 
-            {/* Quick Search */}
+            {/* Busca e Filtros */}
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="relative w-full md:w-96">
                 <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
@@ -462,78 +517,546 @@ export default function App() {
                   className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
               </div>
+
+              <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                <button onClick={() => setSearchQuery('')} className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md font-medium">Todos</button>
+                <button onClick={() => setSearchQuery('Adolescente')} className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md font-medium">Adolescentes</button>
+                <button onClick={() => setSearchQuery('Concluída')} className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md font-medium">Concluídas</button>
+              </div>
             </div>
 
-            {/* Analyses Table */}
+            {/* Tabela de Análises Funcionais */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100">
-                <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-violet-600" />
-                  Análises Funcionais Recentes
-                </h3>
+              <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                <div>
+                  <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-violet-600" />
+                    Análises Funcionais Recentes
+                  </h3>
+                  <p className="text-xs text-slate-500">Acesse, edite com o paciente ou exporte o relatório em PDF</p>
+                </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-semibold border-b border-slate-100">
-                    <tr>
-                      <th className="px-6 py-3">Paciente</th>
-                      <th className="px-6 py-3">Tema / Comportamento Alvo</th>
-                      <th className="px-6 py-3">Tipo</th>
-                      <th className="px-6 py-3">Status</th>
-                      <th className="px-6 py-3 text-right">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredAnalyses.map((ana) => (
-                      <tr key={ana.id} className="hover:bg-violet-50/50 transition-colors">
-                        <td className="px-6 py-4 font-semibold text-slate-900">{ana.pacienteNome}</td>
-                        <td className="px-6 py-4 max-w-xs truncate text-slate-700">
-                          <span className="font-medium text-slate-800">{ana.tema}</span>
-                        </td>
-                        <td className="px-6 py-4"><span className="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-md font-medium">{ana.tipo}</span></td>
-                        <td className="px-6 py-4"><StatusBadge status={ana.status} /></td>
-                        <td className="px-6 py-4 text-right space-x-2">
-                          <button onClick={() => handleEditAnalysis(ana)} className="text-xs bg-violet-50 hover:bg-violet-100 text-violet-700 px-2.5 py-1.5 rounded-lg font-medium">Editar</button>
-                          <button onClick={() => handleOpenPdfModal(ana)} className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-2.5 py-1.5 rounded-lg font-medium">PDF</button>
-                          <button onClick={() => handleDeleteAnalysis(ana.id)} className="text-xs hover:bg-rose-50 text-slate-400 hover:text-rose-600 p-1.5 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>
-                        </td>
+
+              {filteredAnalyses.length === 0 ? (
+                <div className="text-center py-12 px-4">
+                  <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-600 font-medium text-sm">Nenhuma análise funcional encontrada.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-semibold border-b border-slate-100">
+                      <tr>
+                        <th className="px-6 py-3">Paciente</th>
+                        <th className="px-6 py-3">Tema / Comportamento Alvo</th>
+                        <th className="px-6 py-3">Tipo</th>
+                        <th className="px-6 py-3">Status</th>
+                        <th className="px-6 py-3">Atualização</th>
+                        <th className="px-6 py-3 text-right">Ações</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredAnalyses.map((ana) => (
+                        <tr key={ana.id} className="hover:bg-violet-50/50 transition-colors">
+                          <td className="px-6 py-4 font-semibold text-slate-900">{ana.pacienteNome}</td>
+                          <td className="px-6 py-4 max-w-xs truncate text-slate-700">
+                            <span className="font-medium text-slate-800">{ana.tema}</span>
+                            <span className="text-xs text-slate-500 truncate block">{ana.comportamentoAlvo}</span>
+                          </td>
+                          <td className="px-6 py-4"><span className="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-md font-medium border border-slate-200">{ana.tipo}</span></td>
+                          <td className="px-6 py-4"><StatusBadge status={ana.status} /></td>
+                          <td className="px-6 py-4 text-xs text-slate-500">{ana.dataAtualizacao}</td>
+                          <td className="px-6 py-4 text-right space-x-2">
+                            <button onClick={() => handleEditAnalysis(ana)} className="inline-flex items-center text-xs bg-violet-50 hover:bg-violet-100 text-violet-700 px-2.5 py-1.5 rounded-lg font-medium transition-colors">
+                              <Edit3 className="w-3.5 h-3.5 mr-1" /> Editar
+                            </button>
+                            <button onClick={() => handleOpenPdfModal(ana)} className="inline-flex items-center text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-2.5 py-1.5 rounded-lg font-medium transition-colors">
+                              <Printer className="w-3.5 h-3.5 mr-1" /> PDF
+                            </button>
+                            <button onClick={() => handleDeleteAnalysis(ana.id)} className="inline-flex items-center text-xs hover:bg-rose-50 text-slate-400 hover:text-rose-600 p-1.5 rounded-lg transition-colors">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* PATIENTS TAB */}
+        {/* ABA: PACIENTES */}
         {currentTab === 'patients' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-slate-900">Gerenciamento de Pacientes</h2>
-              <button onClick={() => { setPatientForm({ id: '', nome: '', idade: '', faixaEtaria: 'Adolescente', responsavel: '', notas: '' }); setIsPatientModalOpen(true); }} className="bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Gerenciamento de Pacientes</h2>
+                <p className="text-xs text-slate-500">Cadastre e gerencie os prontuários dos pacientes atendidos</p>
+              </div>
+              <button
+                onClick={() => {
+                  setPatientForm({ id: '', nome: '', idade: '', faixaEtaria: 'Adolescente', responsavel: '', notas: '' });
+                  setIsPatientModalOpen(true);
+                }}
+                className="bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1.5"
+              >
                 <UserPlus className="w-4 h-4" /> Cadastrar Paciente
               </button>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredPatients.map((p) => (
-                <div key={p.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900">{p.nome}</h3>
-                    <p className="text-xs text-slate-500 mt-1">Idade: {p.idade} anos ({p.faixaEtaria})</p>
-                    <p className="text-xs text-slate-600 mt-2 bg-slate-50 p-2.5 rounded-lg">{p.notas || "Sem observações."}</p>
+              {filteredPatients.map((p) => {
+                const patientAnalyses = analyses.filter(a => a.pacienteId === p.id);
+                return (
+                  <div key={p.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-violet-100 text-violet-800">
+                            {p.faixaEtaria} ({p.idade} anos)
+                          </span>
+                          <h3 className="text-lg font-bold text-slate-900 mt-1">{p.nome}</h3>
+                        </div>
+                      </div>
+
+                      {p.responsavel && (
+                        <p className="text-xs text-slate-500 mt-2"><strong>Responsável:</strong> {p.responsavel}</p>
+                      )}
+
+                      <p className="text-xs text-slate-600 mt-2 line-clamp-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                        {p.notas || "Sem observações cadastradas."}
+                      </p>
+
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                        <span>Análises vinculadas: <strong>{patientAnalyses.length}</strong></span>
+                        <span>{p.dataCadastro}</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 pt-3 border-t border-slate-100 flex gap-2">
+                      <button onClick={() => handleOpenNewMolecular(p.id)} className="flex-1 bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-semibold py-2 rounded-lg flex items-center justify-center gap-1">
+                        <PlusCircle className="w-3.5 h-3.5" /> Nova Análise
+                      </button>
+                      <button onClick={() => { setPatientForm({ ...p }); setIsPatientModalOpen(true); }} className="px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-2 rounded-lg">
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex gap-2">
-                    <button onClick={() => handleOpenNewMolecular(p.id)} className="flex-1 bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-semibold py-2 rounded-lg">Nova Análise</button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ABA: WIZARD / EDITOR DE ANÁLISE FUNCIONAL */}
+        {currentTab === 'analysis-wizard' && activeAnalysis && (
+          <div className="space-y-6">
+            {/* Cabeçalho do Editor */}
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <button onClick={() => setCurrentTab('dashboard')} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500">
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-slate-900">{activeAnalysis.tema || "Nova Análise Funcional"}</h2>
+                    <StatusBadge status={activeAnalysis.status} />
+                  </div>
+                  <p className="text-xs text-slate-500">Paciente: <strong className="text-slate-800">{activeAnalysis.pacienteNome}</strong></p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                <button onClick={() => handleSaveActiveAnalysis('Em Construção')} className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl flex items-center gap-1.5">
+                  <Save className="w-4 h-4" /> Salvar Rascunho
+                </button>
+                <button onClick={() => handleSaveActiveAnalysis('Concluída')} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-sm">
+                  <Check className="w-4 h-4" /> Concluir Análise
+                </button>
+              </div>
+            </div>
+
+            {/* Stepper de Passos */}
+            <div className="bg-white p-3 rounded-xl border border-slate-200 flex justify-between overflow-x-auto gap-2">
+              {[
+                { step: 1, title: '1. Identificação' },
+                { step: 2, title: '2. Antecedentes (A)' },
+                { step: 3, title: '3. Resposta (B)' },
+                { step: 4, title: '4. Consequências (C)' },
+                { step: 5, title: '5. Formulação & Hipóteses' },
+                { step: 6, title: '6. Planejamento' }
+              ].map((s) => (
+                <button
+                  key={s.step}
+                  onClick={() => setWizardStep(s.step)}
+                  className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+                    wizardStep === s.step 
+                      ? 'bg-violet-600 text-white shadow-sm' 
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  {s.title}
+                </button>
+              ))}
+            </div>
+
+            {/* PASSO 1: IDENTIFICAÇÃO E CONTEXTO */}
+            {wizardStep === 1 && (
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 space-y-4">
+                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b pb-2">Passo 1: Definir o Foco da Análise</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Paciente</label>
+                    <select 
+                      value={selectedPatientId} 
+                      onChange={(e) => {
+                        setSelectedPatientId(e.target.value);
+                        const p = patients.find(item => item.id === e.target.value);
+                        if (p) setActiveAnalysis({ ...activeAnalysis, pacienteId: p.id, pacienteNome: p.nome });
+                      }}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                    >
+                      {patients.map(p => <option key={p.id} value={p.id}>{p.nome} ({p.faixaEtaria})</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Tema Principal da Análise</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ex: Esquiva escolar e ansiedade em provas" 
+                      value={activeAnalysis.tema} 
+                      onChange={(e) => setActiveAnalysis({ ...activeAnalysis, tema: e.target.value })} 
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                    />
                   </div>
                 </div>
-              ))}
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Descrição do Comportamento-Alvo (Definição Operacional)</label>
+                  <textarea 
+                    rows={3} 
+                    placeholder="Descreva em termos observáveis e mensuráveis..." 
+                    value={activeAnalysis.comportamentoAlvo} 
+                    onChange={(e) => setActiveAnalysis({ ...activeAnalysis, comportamentoAlvo: e.target.value })} 
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* PASSO 2: ANTECEDENTES */}
+            {wizardStep === 2 && (
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 space-y-4">
+                <div className="flex justify-between items-center border-b pb-2">
+                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Passo 2: Eventos Antecedentes (A)</h3>
+                  <button onClick={addAntecedente} className="text-xs bg-violet-50 text-violet-700 hover:bg-violet-100 font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1">
+                    <Plus className="w-3.5 h-3.5" /> Adicionar Antecedente
+                  </button>
+                </div>
+
+                {activeAnalysis.antecedentes.map((ant, idx) => (
+                  <div key={ant.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3 relative">
+                    <button onClick={() => removeAntecedente(ant.id)} className="absolute top-3 right-3 text-slate-400 hover:text-rose-600">
+                      <X className="w-4 h-4" />
+                    </button>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Descrição do Antecedente #{idx+1}</label>
+                        <input 
+                          type="text" 
+                          value={ant.descricao} 
+                          onChange={(e) => {
+                            const updated = [...activeAnalysis.antecedentes];
+                            updated[idx].descricao = e.target.value;
+                            setActiveAnalysis({ ...activeAnalysis, antecedentes: updated });
+                          }} 
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Tipo de Estímulo</label>
+                        <select 
+                          value={ant.tipo} 
+                          onChange={(e) => {
+                            const updated = [...activeAnalysis.antecedentes];
+                            updated[idx].tipo = e.target.value;
+                            setActiveAnalysis({ ...activeAnalysis, antecedentes: updated });
+                          }} 
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm"
+                        >
+                          <option value="Estímulo Discriminativo (SD)">Estímulo Discriminativo (SD)</option>
+                          <option value="Operação Estabelecedora (OE/OM)">Operação Estabelecedora (OE/OM)</option>
+                          <option value="Regra / Instrução">Regra / Instrução</option>
+                          <option value="Estímulo Condicionado (CS)">Estímulo Condicionado (CS)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* PASSO 3: RESPOSTAS (COMPORTAMENTO) */}
+            {wizardStep === 3 && (
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 space-y-4">
+                <div className="flex justify-between items-center border-b pb-2">
+                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Passo 3: Classes de Resposta (B)</h3>
+                  <button onClick={addResposta} className="text-xs bg-violet-50 text-violet-700 hover:bg-violet-100 font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1">
+                    <Plus className="w-3.5 h-3.5" /> Adicionar Resposta
+                  </button>
+                </div>
+
+                {activeAnalysis.respostas.map((resp, idx) => (
+                  <div key={resp.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3 relative">
+                    <button onClick={() => removeResposta(resp.id)} className="absolute top-3 right-3 text-slate-400 hover:text-rose-600">
+                      <X className="w-4 h-4" />
+                    </button>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Topografia / Comportamento Observado #{idx+1}</label>
+                        <input 
+                          type="text" 
+                          value={resp.topografia} 
+                          onChange={(e) => {
+                            const updated = [...activeAnalysis.respostas];
+                            updated[idx].topografia = e.target.value;
+                            setActiveAnalysis({ ...activeAnalysis, respostas: updated });
+                          }} 
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Classe de Resposta</label>
+                        <select 
+                          value={resp.classe} 
+                          onChange={(e) => {
+                            const updated = [...activeAnalysis.respostas];
+                            updated[idx].classe = e.target.value;
+                            setActiveAnalysis({ ...activeAnalysis, respostas: updated });
+                          }} 
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm"
+                        >
+                          <option value="Motora / Observável">Motora / Observável</option>
+                          <option value="Cognitiva / Privada">Cognitiva / Privada</option>
+                          <option value="Fisiológica">Fisiológica</option>
+                          <option value="Verbal / Encoberta">Verbal / Encoberta</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* PASSO 4: CONSEQUÊNCIAS */}
+            {wizardStep === 4 && (
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 space-y-4">
+                <div className="flex justify-between items-center border-b pb-2">
+                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Passo 4: Eventos Consequentes (C)</h3>
+                  <button onClick={addConsequencia} className="text-xs bg-violet-50 text-violet-700 hover:bg-violet-100 font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1">
+                    <Plus className="w-3.5 h-3.5" /> Adicionar Consequência
+                  </button>
+                </div>
+
+                {activeAnalysis.consequencias.map((cons, idx) => (
+                  <div key={cons.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3 relative">
+                    <button onClick={() => removeConsequencia(cons.id)} className="absolute top-3 right-3 text-slate-400 hover:text-rose-600">
+                      <X className="w-4 h-4" />
+                    </button>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Descrição da Consequência #{idx+1}</label>
+                        <input 
+                          type="text" 
+                          value={cons.descricao} 
+                          onChange={(e) => {
+                            const updated = [...activeAnalysis.consequencias];
+                            updated[idx].descricao = e.target.value;
+                            setActiveAnalysis({ ...activeAnalysis, consequencias: updated });
+                          }} 
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Efeito Temporal</label>
+                        <select 
+                          value={cons.tempo} 
+                          onChange={(e) => {
+                            const updated = [...activeAnalysis.consequencias];
+                            updated[idx].tempo = e.target.value;
+                            setActiveAnalysis({ ...activeAnalysis, consequencias: updated });
+                          }} 
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm"
+                        >
+                          <option value="Imediata">Imediata</option>
+                          <option value="Médio Prazo">Médio Prazo</option>
+                          <option value="Longo Prazo">Longo Prazo</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* PASSO 5: HIPÓTESES E ANOTAÇÕES PRIVADAS */}
+            {wizardStep === 5 && (
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 space-y-4">
+                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b pb-2">Passo 5: Hipótese Funcional e Anotações Clínicas</h3>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Processo Comportamental Hipotetizado</label>
+                  <select 
+                    value={activeAnalysis.processoHipotetizado} 
+                    onChange={(e) => setActiveAnalysis({ ...activeAnalysis, processoHipotetizado: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                  >
+                    <option value="Reforçamento Positivo">Reforçamento Positivo (Acesso a Atenção / Tangível)</option>
+                    <option value="Reforçamento Negativo (Esquiva/Fuga)">Reforçamento Negativo (Esquiva / Fuga de Aversivo)</option>
+                    <option value="Punição Positiva / Negativa">Punição / Supressão de Resposta</option>
+                    <option value="Extinção">Extinção Comportamental</option>
+                  </select>
+                </div>
+
+                {!isSharedMode && (
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+                    <div className="flex items-center gap-2 text-amber-800 font-bold text-xs">
+                      <Lock className="w-4 h-4" /> Anotações Clínicas Privadas (Visíveis apenas no Modo Clínico)
+                    </div>
+                    <textarea 
+                      rows={3} 
+                      placeholder="Anote impressões diagnósticas, hipóteses que não devem ser mostradas ao paciente ainda..." 
+                      value={activeAnalysis.anotacoesPrivadas} 
+                      onChange={(e) => setActiveAnalysis({ ...activeAnalysis, anotacoesPrivadas: e.target.value })} 
+                      className="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* PASSO 6: PLANEJAMENTO E MANEJO */}
+            {wizardStep === 6 && (
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 space-y-4">
+                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b pb-2">Passo 6: Planejamento Terapêutico e Acordos</h3>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Objetivos Terapêuticos Específicos</label>
+                  <textarea 
+                    rows={2} 
+                    value={activeAnalysis.objetivoTerapeutico} 
+                    onChange={(e) => setActiveAnalysis({ ...activeAnalysis, objetivoTerapeutico: e.target.value })} 
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Estratégias de Intervenção e Manejo</label>
+                  <textarea 
+                    rows={2} 
+                    value={activeAnalysis.estratégiasManejo} 
+                    onChange={(e) => setActiveAnalysis({ ...activeAnalysis, estratégiasManejo: e.target.value })} 
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Ações e Tarefas Acordadas para a Semana</label>
+                  <textarea 
+                    rows={2} 
+                    value={activeAnalysis.acoesAcordadas} 
+                    onChange={(e) => setActiveAnalysis({ ...activeAnalysis, acoesAcordadas: e.target.value })} 
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Navegação entre Passos do Wizard */}
+            <div className="flex justify-between items-center pt-2">
+              <button 
+                disabled={wizardStep === 1}
+                onClick={() => setWizardStep(prev => prev - 1)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 text-xs font-semibold rounded-xl flex items-center gap-1"
+              >
+                <ArrowLeft className="w-4 h-4" /> Passo Anterior
+              </button>
+
+              {wizardStep < 6 ? (
+                <button 
+                  onClick={() => setWizardStep(prev => prev + 1)}
+                  className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1 shadow-sm"
+                >
+                  Próximo Passo <ArrowRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <button 
+                  onClick={() => handleSaveActiveAnalysis('Concluída')}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1 shadow-sm"
+                >
+                  <Check className="w-4 h-4" /> Finalizar e Salvar Análise
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ABA: PERFIL PROFISSIONAL */}
+        {currentTab === 'settings' && (
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 max-w-2xl mx-auto space-y-4">
+            <h2 className="text-lg font-bold text-slate-900 border-b pb-2">Perfil Profissional</h2>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Nome Completo</label>
+              <input type="text" value={profile.nome} onChange={(e) => setProfile({...profile, nome: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Número do CRP</label>
+              <input type="text" value={profile.crp} onChange={(e) => setProfile({...profile, crp: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Título / Especialidade</label>
+              <input type="text" value={profile.titulo} onChange={(e) => setProfile({...profile, titulo: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Nome do Consultório / Clínica</label>
+              <input type="text" value={profile.consultorio} onChange={(e) => setProfile({...profile, consultorio: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
+            </div>
+            <button onClick={() => persistData(profile, null, null)} className="bg-violet-600 hover:bg-violet-700 text-white text-xs px-4 py-2 rounded-xl font-semibold transition-all">
+              Salvar Alterações do Perfil
+            </button>
+          </div>
+        )}
+
+        {/* ABA: GUIA CLÍNICO */}
+        {currentTab === 'help' && (
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 max-w-3xl mx-auto space-y-4">
+            <h2 className="text-lg font-bold text-slate-900 border-b pb-2">Guia Prático: Análise Funcional do Comportamento</h2>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              A Análise Funcional (A-B-C) é a ferramenta basilar da Análise do Comportamento Aplicada. Ela busca identificar as variáveis ambientais que mantêm ou suprimem classes de respostas.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+              <div className="p-4 bg-violet-50 rounded-xl border border-violet-100">
+                <h3 className="font-bold text-violet-900 text-xs">Antecedentes (A)</h3>
+                <p className="text-xs text-violet-700 mt-1">Estímulos discriminativos e operações motivadoras que antecedem e alteram a probabilidade do comportamento.</p>
+              </div>
+              <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                <h3 className="font-bold text-indigo-900 text-xs">Resposta (B)</h3>
+                <p className="text-xs text-indigo-700 mt-1">Ações observáveis ou encobertas (motoras, cognitivas, fisiológicas e verbais).</p>
+              </div>
+              <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                <h3 className="font-bold text-emerald-900 text-xs">Consequências (C)</h3>
+                <p className="text-xs text-emerald-700 mt-1">Mudanças no ambiente imediato ou a longo prazo que afetam a frequência futura da resposta.</p>
+              </div>
             </div>
           </div>
         )}
       </main>
 
-      {/* PATIENT MODAL */}
+      {/* MODAL: CADASTRAR / EDITAR PACIENTE */}
       {isPatientModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl">
@@ -541,16 +1064,16 @@ export default function App() {
             <form onSubmit={handleSavePatient} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Nome Completo</label>
-                <input type="text" required value={patientForm.nome} onChange={(e) => setPatientForm({...patientForm, nome: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                <input type="text" required value={patientForm.nome} onChange={(e) => setPatientForm({...patientForm, nome: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">Idade</label>
-                  <input type="number" required value={patientForm.idade} onChange={(e) => setPatientForm({...patientForm, idade: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                  <input type="number" required value={patientForm.idade} onChange={(e) => setPatientForm({...patientForm, idade: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Faixa Etaria</label>
-                  <select value={patientForm.faixaEtaria} onChange={(e) => setPatientForm({...patientForm, faixaEtaria: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm">
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Faixa Etária</label>
+                  <select value={patientForm.faixaEtaria} onChange={(e) => setPatientForm({...patientForm, faixaEtaria: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
                     <option value="Adolescente">Adolescente</option>
                     <option value="Adulta">Adulta</option>
                     <option value="Infantil">Infantil</option>
@@ -558,18 +1081,94 @@ export default function App() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Responsável (se menor)</label>
-                <input type="text" value={patientForm.responsavel} onChange={(e) => setPatientForm({...patientForm, responsavel: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Responsável (se houver)</label>
+                <input type="text" value={patientForm.responsavel} onChange={(e) => setPatientForm({...patientForm, responsavel: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Notas / Demanda Inicial</label>
-                <textarea rows={3} value={patientForm.notas} onChange={(e) => setPatientForm({...patientForm, notas: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                <textarea rows={3} value={patientForm.notas} onChange={(e) => setPatientForm({...patientForm, notas: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
               </div>
               <div className="flex justify-end gap-2 pt-4">
                 <button type="button" onClick={() => setIsPatientModalOpen(false)} className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg">Cancelar</button>
                 <button type="submit" className="px-4 py-2 bg-violet-600 text-white text-xs font-semibold rounded-lg">Salvar Paciente</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: VISUALIZAÇÃO E IMPRESSÃO DE PDF */}
+      {isPdfModalOpen && pdfAnalysis && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl space-y-4 my-8">
+            <div className="flex justify-between items-center border-b pb-3 print:hidden">
+              <h3 className="font-bold text-slate-900 text-base">Relatório de Análise Funcional (Prontuário)</h3>
+              <div className="flex items-center gap-2">
+                <button onClick={() => window.print()} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl flex items-center gap-1.5">
+                  <Printer className="w-4 h-4" /> Imprimir / PDF
+                </button>
+                <button onClick={() => setIsPdfModalOpen(false)} className="text-slate-400 hover:text-slate-700 p-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Documento Impresso */}
+            <div className="p-6 bg-white border border-slate-200 rounded-xl space-y-4 text-xs font-sans">
+              <div className="border-b pb-4 flex justify-between items-start">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">{profile.nome}</h2>
+                  <p className="text-slate-500">{profile.titulo} • CRP: {profile.crp}</p>
+                  <p className="text-slate-500">{profile.consultorio}</p>
+                </div>
+                <div className="text-right text-slate-400">
+                  <p>Data do Documento: {new Date().toLocaleDateString('pt-BR')}</p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-slate-800 text-sm mb-1">1. Dados do Paciente e Análise</h3>
+                <p><strong>Paciente:</strong> {pdfAnalysis.pacienteNome}</p>
+                <p><strong>Tema:</strong> {pdfAnalysis.tema}</p>
+                <p><strong>Comportamento-Alvo:</strong> {pdfAnalysis.comportamentoAlvo}</p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-slate-800 text-sm mb-1">2. Tríplice Contingência (A-B-C)</h3>
+                <div className="grid grid-cols-3 gap-2 border p-3 rounded-lg bg-slate-50">
+                  <div>
+                    <strong className="text-violet-800">Antecedentes (A):</strong>
+                    <ul className="list-disc pl-4 mt-1 space-y-0.5">
+                      {pdfAnalysis.antecedentes.map(a => <li key={a.id}>{a.descricao} ({a.tipo})</li>)}
+                    </ul>
+                  </div>
+                  <div>
+                    <strong className="text-indigo-800">Respostas (B):</strong>
+                    <ul className="list-disc pl-4 mt-1 space-y-0.5">
+                      {pdfAnalysis.respostas.map(r => <li key={r.id}>{r.topografia}</li>)}
+                    </ul>
+                  </div>
+                  <div>
+                    <strong className="text-emerald-800">Consequências (C):</strong>
+                    <ul className="list-disc pl-4 mt-1 space-y-0.5">
+                      {pdfAnalysis.consequencias.map(c => <li key={c.id}>{c.descricao} ({c.tempo})</li>)}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-slate-800 text-sm mb-1">3. Formulação Hipotetizada</h3>
+                <p><strong>Processo Predominante:</strong> {pdfAnalysis.processoHipotetizado}</p>
+              </div>
+
+              {pdfAnalysis.objetivoTerapeutico && (
+                <div>
+                  <h3 className="font-bold text-slate-800 text-sm mb-1">4. Plano de Intervenção</h3>
+                  <p>{pdfAnalysis.objetivoTerapeutico}</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
