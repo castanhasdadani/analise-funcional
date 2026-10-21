@@ -1,1 +1,1447 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PsiAnalise - Sistema de Análise Funcional (Dra. Daniele Sousa Santos)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        lilas: {
+                            50: '#F5F3FF',
+                            100: '#EDE9FE',
+                            200: '#DDD6FE',
+                            300: '#C4B5FD',
+                            400: '#A78BFA',
+                            500: '#8A70D6',
+                            600: '#7C3AED',
+                            700: '#6D28D9',
+                        },
+                        rosaSoft: {
+                            50: '#FFF5F7',
+                            100: '#F8E8EE',
+                            200: '#F3D0DC',
+                        },
+                        grafite: '#2D3748',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- React, ReactDOM, Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F9FA;
+            color: #2D3748;
+        }
+        
+        /* Print Styles for Perfect PDF Output */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+                font-size: 11pt;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .page-break-inside-avoid {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .page-break-before {
+                page-break-before: always;
+                break-before: page;
+            }
+            @page {
+                size: A4;
+                margin: 15mm 15mm 15mm 15mm;
+            }
+            .print-container {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+        }
 
+        .print-only {
+            display: none;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F1F1F1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #C4B5FD;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8A70D6;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // Default Professional Profile Data
+        const INITIAL_PROFILE = {
+            nome: "Daniele Sousa Santos",
+            crp: "22/07398",
+            email: "daniele.psicologia@exemplo.com.br",
+            telefone: "(98) 98888-7777",
+            consultorio: "Clínica de Psicologia & Análise do Comportamento"
+        };
+
+        // Initial Sample Patient Data
+        const INITIAL_PATIENTS = [
+            {
+                id: "pat_1",
+                nome: "Lucas Mendes (Exemplo)",
+                idade: 17,
+                categoria: "Adolescente",
+                responsavel: "Mariana Mendes (Mãe)",
+                contato: "(98) 99123-4567",
+                observacoes: "Encaminhado por queixas de esquiva escolar e ansiedade em apresentações.",
+                status: "Ativo",
+                dataCadastro: "2026-01-15"
+            },
+            {
+                id: "pat_2",
+                nome: "Camila Ribeiro (Exemplo)",
+                idade: 28,
+                categoria: "Adulto",
+                responsavel: "",
+                contato: "(98) 98765-4321",
+                observacoes: "Queixa de procrastinação no ambiente corporativo e sobrecarga emocional.",
+                status: "Ativo",
+                dataCadastro: "2026-02-01"
+            }
+        ];
+
+        // Initial Sample Analyses
+        const INITIAL_ANALYSES = [
+            {
+                id: "ana_1",
+                pacienteId: "pat_1",
+                pacienteNome: "Lucas Mendes (Exemplo)",
+                tipo: "Molecular",
+                tema: "Esquiva de apresentações orais na escola",
+                comportamentoAlvo: "Desligar a câmera e inventar mal-estar ao ser chamado pelo professor",
+                status: "Concluída",
+                dataAtualizacao: "2026-03-10",
+                contingencia: {
+                    antecedentes: "Professor solicita abertura de câmera e apresentação de seminário individual online.",
+                    respostas: "Aumento da frequência cardíaca, sudorese, pensamento 'vou passar vergonha', fechamento do navegador e mensagem de texto dizendo que passou mal.",
+                    consequencias: "Alívio imediato da ansiedade (reforço negativo), adiamento da apresentação, notificação enviada aos pais.",
+                    efeitosEmocionais: "Sentimento temporário de alívio seguido de culpa e desesperança no final do dia.",
+                    efeitoProbabilidade: "Aumento da probabilidade de emitir respostas de esquiva em situações de cobrança pública futuras.",
+                    processoHipotetizado: "Reforçamento Negativo (Esquiva/Fuga de estimulação aversiva social)",
+                    confiancaClinica: "Alto"
+                },
+                anotacoesPrivadas: "Investigar história de punição pública na 7ª série. Trabalhar dessensibilização sistemática e treino de assertividade."
+            }
+        ];
+
+        function App() {
+            // Persistent State
+            const [profile, setProfile] = useState(() => {
+                const saved = localStorage.getItem('psi_profile');
+                return saved ? JSON.parse(saved) : INITIAL_PROFILE;
+            });
+
+            const [patients, setPatients] = useState(() => {
+                const saved = localStorage.getItem('psi_patients');
+                return saved ? JSON.parse(saved) : INITIAL_PATIENTS;
+            });
+
+            const [analyses, setAnalyses] = useState(() => {
+                const saved = localStorage.getItem('psi_analyses');
+                return saved ? JSON.parse(saved) : INITIAL_ANALYSES;
+            });
+
+            const [molarAnalyses, setMolarAnalyses] = useState(() => {
+                const saved = localStorage.getItem('psi_molar_analyses');
+                return saved ? JSON.parse(saved) : [];
+            });
+
+            const [interventions, setInterventions] = useState(() => {
+                const saved = localStorage.getItem('psi_interventions');
+                return saved ? JSON.parse(saved) : [];
+            });
+
+            // UI Control States
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [isSharedMode, setIsSharedMode] = useState(false); // Toggle: Patient Shared vs Clinical Mode
+            const [searchQuery, setSearchQuery] = useState('');
+            const [autoSaveStatus, setAutoSaveStatus] = useState('Salvo');
+            const [selectedPatientId, setSelectedPatientId] = useState('');
+
+            // Modals
+            const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
+            const [editingPatient, setEditingPatient] = useState(null);
+
+            // Active Form State for Molecular Analysis Wizard
+            const [currentMolecularStep, setCurrentMolecularStep] = useState(1);
+            const [activeMolecular, setActiveMolecular] = useState({
+                id: '',
+                pacienteId: '',
+                tema: '',
+                comportamentoAlvo: '',
+                contexto: '',
+                objetivo: '',
+                status: 'Rascunho',
+                contingencia: {
+                    antecedentes: '',
+                    respostas: '',
+                    consequencias: '',
+                    efeitosEmocionais: '',
+                    efeitoProbabilidade: 'Aumentou',
+                    processoHipotetizado: 'Reforçamento Negativo',
+                    confiancaClinica: 'Médio'
+                },
+                anotacoesPrivadas: ''
+            });
+
+            // Active Form State for Molar Analysis
+            const [activeMolar, setActiveMolar] = useState({
+                id: '',
+                pacienteId: '',
+                historiaAprendizagem: '',
+                padroesRecorrentes: '',
+                consequenciasCumulativas: '',
+                relacoesMolares: '',
+                análisesVinculadas: [],
+                status: 'Rascunho'
+            });
+
+            // Active PDF Print Options
+            const [pdfConfig, setPdfConfig] = useState({
+                incluirDiagrama: true,
+                incluirEfeitos: true,
+                incluirProcessos: true,
+                incluirAnotacoesPrivadas: false,
+                incluirMolar: true,
+                incluirIntervencoes: true
+            });
+
+            // Save state updates to LocalStorage
+            useEffect(() => {
+                localStorage.setItem('psi_profile', JSON.stringify(profile));
+            }, [profile]);
+
+            useEffect(() => {
+                localStorage.setItem('psi_patients', JSON.stringify(patients));
+            }, [patients]);
+
+            useEffect(() => {
+                localStorage.setItem('psi_analyses', JSON.stringify(analyses));
+            }, [analyses]);
+
+            useEffect(() => {
+                localStorage.setItem('psi_molar_analyses', JSON.stringify(molarAnalyses));
+            }, [molarAnalyses]);
+
+            useEffect(() => {
+                localStorage.setItem('psi_interventions', JSON.stringify(interventions));
+            }, [interventions]);
+
+            // Auto-save feedback simulation
+            const triggerAutoSave = () => {
+                setAutoSaveStatus('Salvando...');
+                setTimeout(() => {
+                    const now = new Date();
+                    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                    setAutoSaveStatus(`Salvo às ${timeStr}`);
+                }, 400);
+            };
+
+            // BeforeUnload Warning for Unsaved Changes
+            useEffect(() => {
+                const handleBeforeUnload = (e) => {
+                    if (activeMolecular.tema || activeMolecular.comportamentoAlvo) {
+                        e.preventDefault();
+                        e.returnValue = '';
+                    }
+                };
+                window.addEventListener('beforeunload', handleBeforeUnload);
+                return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+            }, [activeMolecular]);
+
+            // Icons rendering setup
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            });
+
+            // Handlers for Patient Management
+            const handleSavePatient = (patientData) => {
+                if (patientData.id) {
+                    setPatients(patients.map(p => p.id === patientData.id ? patientData : p));
+                } else {
+                    const newPatient = {
+                        ...patientData,
+                        id: `pat_${Date.now()}`,
+                        dataCadastro: new Date().toISOString().split('T')[0],
+                        status: 'Ativo'
+                    };
+                    setPatients([...patients, newPatient]);
+                }
+                setIsPatientModalOpen(false);
+                setEditingPatient(null);
+                triggerAutoSave();
+            };
+
+            const handleArchivePatient = (id) => {
+                setPatients(patients.map(p => p.id === id ? { ...p, status: p.status === 'Ativo' ? 'Arquivado' : 'Ativo' } : p));
+                triggerAutoSave();
+            };
+
+            // Handlers for Molecular Analysis
+            const handleSaveMolecular = (statusOverride) => {
+                if (!activeMolecular.pacienteId) {
+                    alert("Por favor, selecione um paciente para a análise.");
+                    return;
+                }
+                const paciente = patients.find(p => p.id === activeMolecular.pacienteId);
+                const updatedStatus = statusOverride || activeMolecular.status;
+                const analysisToSave = {
+                    ...activeMolecular,
+                    pacienteNome: paciente ? paciente.nome : 'Não Identificado',
+                    status: updatedStatus,
+                    dataAtualizacao: new Date().toISOString().split('T')[0]
+                };
+
+                if (activeMolecular.id) {
+                    setAnalyses(analyses.map(a => a.id === activeMolecular.id ? analysisToSave : a));
+                } else {
+                    const newId = `ana_${Date.now()}`;
+                    analysisToSave.id = newId;
+                    setAnalyses([analysisToSave, ...analyses]);
+                    setActiveMolecular(analysisToSave);
+                }
+                triggerAutoSave();
+            };
+
+            const handleStartNewMolecular = (patientId = '') => {
+                setActiveMolecular({
+                    id: '',
+                    pacienteId: patientId,
+                    tema: '',
+                    comportamentoAlvo: '',
+                    contexto: '',
+                    objetivo: '',
+                    status: 'Rascunho',
+                    contingencia: {
+                        antecedentes: '',
+                        respostas: '',
+                        consequencias: '',
+                        efeitosEmocionais: '',
+                        efeitoProbabilidade: 'Aumentou',
+                        processoHipotetizado: 'Reforçamento Negativo',
+                        confiancaClinica: 'Médio'
+                    },
+                    anotacoesPrivadas: ''
+                });
+                setCurrentMolecularStep(1);
+                setActiveTab('molecular');
+            };
+
+            const handleLoadMolecularForEdit = (ana) => {
+                setActiveMolecular(ana);
+                setCurrentMolecularStep(1);
+                setActiveTab('molecular');
+            };
+
+            // Print Handler
+            const handlePrintPDF = () => {
+                window.print();
+            };
+
+            // Stats for Dashboard
+            const stats = useMemo(() => {
+                const totalPatients = patients.filter(p => p.status === 'Ativo').length;
+                const completedAnalyses = analyses.filter(a => a.status === 'Concluída').length;
+                const draftAnalyses = analyses.filter(a => a.status === 'Rascunho' || a.status === 'Em Construção').length;
+                return { totalPatients, completedAnalyses, draftAnalyses };
+            }, [patients, analyses]);
+
+            // Filtered lists
+            const filteredPatients = useMemo(() => {
+                return patients.filter(p => p.nome.toLowerCase().includes(searchQuery.toLowerCase()) || p.observacoes.toLowerCase().includes(searchQuery.toLowerCase()));
+            }, [patients, searchQuery]);
+
+            const filteredAnalyses = useMemo(() => {
+                return analyses.filter(a => a.pacienteNome.toLowerCase().includes(searchQuery.toLowerCase()) || a.tema.toLowerCase().includes(searchQuery.toLowerCase()));
+            }, [analyses, searchQuery]);
+
+            return (
+                <div className="min-h-screen flex flex-col md:flex-row bg-[#F8F9FA] text-grafite">
+                    
+                    {/* SIDEBAR - Navigation & Controls (Hidden during print) */}
+                    <aside className="w-full md:w-64 bg-white border-r border-gray-200 flex-shrink-0 no-print flex flex-col justify-between">
+                        <div>
+                            {/* App Header & Therapist Identity */}
+                            <div className="p-5 border-b border-gray-100 bg-lilas-50">
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-10 h-10 rounded-xl bg-lilas-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                                        Ψ
+                                    </div>
+                                    <div>
+                                        <h1 className="font-bold text-gray-900 text-base leading-tight">PsiAnálise</h1>
+                                        <p className="text-xs text-lilas-700 font-medium">Análise Funcional</p>
+                                    </div>
+                                </div>
+                                
+                                {/* Dra. Daniele Sousa Santos CRP Display */}
+                                <div className="mt-4 pt-3 border-t border-lilas-200/60 text-xs">
+                                    <p className="font-semibold text-gray-800">{profile.nome}</p>
+                                    <p className="text-gray-500 font-mono">CRP: {profile.crp}</p>
+                                </div>
+                            </div>
+
+                            {/* Navigation Links */}
+                            <nav className="p-3 space-y-1 text-sm font-medium">
+                                <button 
+                                    onClick={() => setActiveTab('dashboard')} 
+                                    className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${activeTab === 'dashboard' ? 'bg-lilas-100 text-lilas-700 font-semibold' : 'text-gray-600 hover:bg-gray-100'}`}
+                                >
+                                    <i data-lucide="layout-dashboard" className="w-4 h-4"></i>
+                                    <span>Dashboard</span>
+                                </button>
+
+                                <button 
+                                    onClick={() => setActiveTab('pacientes')} 
+                                    className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${activeTab === 'pacientes' ? 'bg-lilas-100 text-lilas-700 font-semibold' : 'text-gray-600 hover:bg-gray-100'}`}
+                                >
+                                    <i data-lucide="users" className="w-4 h-4"></i>
+                                    <span>Pacientes</span>
+                                </button>
+
+                                <button 
+                                    onClick={() => setActiveTab('molecular')} 
+                                    className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${activeTab === 'molecular' ? 'bg-lilas-100 text-lilas-700 font-semibold' : 'text-gray-600 hover:bg-gray-100'}`}
+                                >
+                                    <i data-lucide="git-commit" className="w-4 h-4"></i>
+                                    <span>Análise Molecular</span>
+                                </button>
+
+                                <button 
+                                    onClick={() => setActiveTab('molar')} 
+                                    className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${activeTab === 'molar' ? 'bg-lilas-100 text-lilas-700 font-semibold' : 'text-gray-600 hover:bg-gray-100'}`}
+                                >
+                                    <i data-lucide="layers" className="w-4 h-4"></i>
+                                    <span>Análise Molar</span>
+                                </button>
+
+                                <button 
+                                    onClick={() => setActiveTab('intervencao')} 
+                                    className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${activeTab === 'intervencao' ? 'bg-lilas-100 text-lilas-700 font-semibold' : 'text-gray-600 hover:bg-gray-100'}`}
+                                >
+                                    <i data-lucide="target" className="w-4 h-4"></i>
+                                    <span>Plano de Intervenção</span>
+                                </button>
+
+                                <button 
+                                    onClick={() => setActiveTab('exportar')} 
+                                    className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${activeTab === 'exportar' ? 'bg-lilas-100 text-lilas-700 font-semibold' : 'text-gray-600 hover:bg-gray-100'}`}
+                                >
+                                    <i data-lucide="file-text" className="w-4 h-4"></i>
+                                    <span>Gerar PDF / Relatório</span>
+                                </button>
+
+                                <button 
+                                    onClick={() => setActiveTab('config')} 
+                                    className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${activeTab === 'config' ? 'bg-lilas-100 text-lilas-700 font-semibold' : 'text-gray-600 hover:bg-gray-100'}`}
+                                >
+                                    <i data-lucide="settings" className="w-4 h-4"></i>
+                                    <span>Perfil Profissional</span>
+                                </button>
+                            </nav>
+                        </div>
+
+                        {/* Session Mode Switch & Status */}
+                        <div className="p-4 border-t border-gray-200 bg-gray-50/50">
+                            <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-semibold text-gray-700">Modo Compartilhado</span>
+                                    <button 
+                                        onClick={() => setIsSharedMode(!isSharedMode)}
+                                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isSharedMode ? 'bg-lilas-500' : 'bg-gray-300'}`}
+                                    >
+                                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isSharedMode ? 'translate-x-5' : 'translate-x-0'}`} />
+                                    </button>
+                                </div>
+                                <p className="text-[11px] text-gray-500 leading-tight">
+                                    {isSharedMode 
+                                        ? "👀 Ocultando anotações clínicas privadas para compartilhamento de tela na sessão."
+                                        : "🔒 Exibindo todos os campos e notas técnicas privadas."
+                                    }
+                                </p>
+                            </div>
+
+                            <div className="mt-3 flex items-center justify-between text-xs text-gray-500 px-1">
+                                <span className="flex items-center space-x-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                    <span>{autoSaveStatus}</span>
+                                </span>
+                            </div>
+                        </div>
+                    </aside>
+
+                    {/* MAIN CONTENT AREA */}
+                    <main className="flex-1 overflow-y-auto p-4 md:p-8">
+                        
+                        {/* Shared Session Alert Bar */}
+                        {isSharedMode && (
+                            <div className="no-print mb-6 bg-rosaSoft-100 border border-rosaSoft-200 rounded-xl p-3 flex items-center justify-between text-sm text-gray-800 shadow-sm">
+                                <div className="flex items-center space-x-2">
+                                    <i data-lucide="eye" className="w-5 h-5 text-lilas-600"></i>
+                                    <span className="font-medium">Modo de Co-construção Ativo (Paciente)</span>
+                                    <span className="text-xs bg-white px-2 py-0.5 rounded border border-rosaSoft-200 text-gray-600">Anotações técnicas ocultadas</span>
+                                </div>
+                                <button onClick={() => setIsSharedMode(false)} className="text-xs font-semibold text-lilas-700 hover:underline">
+                                    Alternar para Modo Clínico
+                                </button>
+                            </div>
+                        )}
+
+                        {/* TAB 1: DASHBOARD */}
+                        {activeTab === 'dashboard' && (
+                            <div className="space-y-6">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-gray-900">Visão Geral Clínica</h2>
+                                        <p className="text-sm text-gray-500">Acompanhamento de análises funcionais e prontuários.</p>
+                                    </div>
+                                    <div className="flex space-x-2">
+                                        <button 
+                                            onClick={() => handleStartNewMolecular('')}
+                                            className="px-4 py-2 bg-lilas-500 hover:bg-lilas-600 text-white rounded-lg text-sm font-medium shadow-sm transition-colors flex items-center space-x-2"
+                                        >
+                                            <i data-lucide="plus" className="w-4 h-4"></i>
+                                            <span>Nova Análise</span>
+                                        </button>
+                                        <button 
+                                            onClick={() => { setEditingPatient(null); setIsPatientModalOpen(true); }}
+                                            className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium shadow-sm transition-colors flex items-center space-x-2"
+                                        >
+                                            <i data-lucide="user-plus" className="w-4 h-4"></i>
+                                            <span>Novo Paciente</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Stats Cards */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center space-x-4">
+                                        <div className="p-3 bg-lilas-50 text-lilas-600 rounded-xl">
+                                            <i data-lucide="users" className="w-6 h-6"></i>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-medium text-gray-500">Pacientes Ativos</p>
+                                            <p className="text-2xl font-bold text-gray-900">{stats.totalPatients}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center space-x-4">
+                                        <div className="p-3 bg-green-50 text-green-600 rounded-xl">
+                                            <i data-lucide="check-circle-2" className="w-6 h-6"></i>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-medium text-gray-500">Análises Concluídas</p>
+                                            <p className="text-2xl font-bold text-gray-900">{stats.completedAnalyses}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center space-x-4">
+                                        <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                                            <i data-lucide="clock" className="w-6 h-6"></i>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-medium text-gray-500">Rascunhos / Em Andamento</p>
+                                            <p className="text-2xl font-bold text-gray-900">{stats.draftAnalyses}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Recent Analyses Table */}
+                                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                                    <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <h3 className="font-bold text-gray-900 text-lg">Análises Funcionais Recentes</h3>
+                                        <div className="relative w-full sm:w-64">
+                                            <i data-lucide="search" className="w-4 h-4 absolute left-3 top-2.5 text-gray-400"></i>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Buscar por paciente ou tema..." 
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className="w-full pl-9 pr-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-lilas-400"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse text-sm">
+                                            <thead>
+                                                <tr className="bg-gray-50/70 border-b border-gray-100 text-gray-500 font-semibold text-xs uppercase tracking-wider">
+                                                    <th className="p-4">Paciente</th>
+                                                    <th className="p-4">Tema / Comportamento Alvo</th>
+                                                    <th className="p-4">Tipo</th>
+                                                    <th className="p-4">Status</th>
+                                                    <th className="p-4">Última Modificação</th>
+                                                    <th className="p-4 text-right">Ações</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100">
+                                                {filteredAnalyses.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan="6" className="p-8 text-center text-gray-400">
+                                                            Nenhuma análise encontrada.
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    filteredAnalyses.map(ana => (
+                                                        <tr key={ana.id} className="hover:bg-gray-50/50 transition-colors">
+                                                            <td className="p-4 font-semibold text-gray-900">{ana.pacienteNome}</td>
+                                                            <td className="p-4 max-w-xs truncate text-gray-700">{ana.tema}</td>
+                                                            <td className="p-4">
+                                                                <span className="px-2.5 py-1 bg-lilas-50 text-lilas-700 rounded-md text-xs font-medium border border-lilas-100">
+                                                                    {ana.tipo || 'Molecular'}
+                                                                </span>
+                                                            </td>
+                                                            <td className="p-4">
+                                                                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${ana.status === 'Concluída' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                                    {ana.status}
+                                                                </span>
+                                                            </td>
+                                                            <td className="p-4 text-gray-500 text-xs">{ana.dataAtualizacao}</td>
+                                                            <td className="p-4 text-right space-x-2">
+                                                                <button 
+                                                                    onClick={() => handleLoadMolecularForEdit(ana)}
+                                                                    className="px-3 py-1.5 bg-lilas-50 text-lilas-700 hover:bg-lilas-100 rounded-lg text-xs font-medium transition-colors"
+                                                                >
+                                                                    Editar / Continuar
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        handleLoadMolecularForEdit(ana);
+                                                                        setActiveTab('exportar');
+                                                                    }}
+                                                                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors"
+                                                                >
+                                                                    PDF
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 2: PACIENTES */}
+                        {activeTab === 'pacientes' && (
+                            <div className="space-y-6">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-gray-900">Gestão de Pacientes</h2>
+                                        <p className="text-sm text-gray-500">Cadastro e prontuários estruturados.</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => { setEditingPatient(null); setIsPatientModalOpen(true); }}
+                                        className="px-4 py-2 bg-lilas-500 hover:bg-lilas-600 text-white rounded-lg text-sm font-medium shadow-sm transition-colors flex items-center space-x-2 self-start"
+                                    >
+                                        <i data-lucide="user-plus" className="w-4 h-4"></i>
+                                        <span>Cadastrar Paciente</span>
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                                    {filteredPatients.map(patient => (
+                                        <div key={patient.id} className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4 relative flex flex-col justify-between">
+                                            <div>
+                                                <div className="flex items-start justify-between">
+                                                    <div>
+                                                        <h3 className="font-bold text-gray-900 text-lg leading-snug">{patient.nome}</h3>
+                                                        <span className="inline-block mt-1 px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-medium">
+                                                            {patient.categoria} • {patient.idade} anos
+                                                        </span>
+                                                    </div>
+                                                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${patient.status === 'Ativo' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                        {patient.status}
+                                                    </span>
+                                                </div>
+
+                                                {patient.responsavel && (
+                                                    <p className="mt-3 text-xs text-gray-500">
+                                                        <span className="font-medium text-gray-700">Responsável:</span> {patient.responsavel}
+                                                    </p>
+                                                )}
+
+                                                <p className="mt-2 text-xs text-gray-600 line-clamp-3 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                                                    {patient.observacoes || "Sem observações cadastradas."}
+                                                </p>
+                                            </div>
+
+                                            <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                                                <button 
+                                                    onClick={() => handleStartNewMolecular(patient.id)}
+                                                    className="px-3 py-1.5 bg-lilas-50 text-lilas-700 hover:bg-lilas-100 rounded-lg text-xs font-medium transition-colors flex items-center space-x-1"
+                                                >
+                                                    <i data-lucide="plus" className="w-3.5 h-3.5"></i>
+                                                    <span>Nova Análise</span>
+                                                </button>
+
+                                                <div className="space-x-1">
+                                                    <button 
+                                                        onClick={() => { setEditingPatient(patient); setIsPatientModalOpen(true); }}
+                                                        className="p-1.5 text-gray-500 hover:text-gray-800 rounded hover:bg-gray-100"
+                                                        title="Editar"
+                                                    >
+                                                        <i data-lucide="edit-2" className="w-4 h-4"></i>
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleArchivePatient(patient.id)}
+                                                        className="p-1.5 text-gray-400 hover:text-amber-600 rounded hover:bg-gray-100"
+                                                        title={patient.status === 'Ativo' ? "Arquivar" : "Desarquivar"}
+                                                    >
+                                                        <i data-lucide="archive" className="w-4 h-4"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 3: ANÁLISE MOLECULAR (MICROANÁLISE WIZARD) */}
+                        {activeTab === 'molecular' && (
+                            <div className="space-y-6">
+                                {/* Header & Patient Selection */}
+                                <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div>
+                                        <span className="text-xs font-semibold text-lilas-700 bg-lilas-50 px-2.5 py-1 rounded-md border border-lilas-100">
+                                            Módulo de Microanálise (Contingência Tríplice)
+                                        </span>
+                                        <h2 className="text-xl font-bold text-gray-900 mt-2">Construção da Análise Molecular</h2>
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                                        <select 
+                                            value={activeMolecular.pacienteId}
+                                            onChange={(e) => setActiveMolecular({...activeMolecular, pacienteId: e.target.value})}
+                                            className="px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lilas-400 font-medium"
+                                        >
+                                            <option value="">-- Selecionar Paciente --</option>
+                                            {patients.map(p => (
+                                                <option key={p.id} value={p.id}>{p.nome} ({p.categoria})</option>
+                                            ))}
+                                        </select>
+
+                                        <button 
+                                            onClick={() => handleSaveMolecular('Rascunho')}
+                                            className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                                        >
+                                            Salvar Rascunho
+                                        </button>
+
+                                        <button 
+                                            onClick={() => handleSaveMolecular('Concluída')}
+                                            className="px-4 py-2 bg-lilas-500 hover:bg-lilas-600 text-white rounded-lg text-sm font-medium transition-colors"
+                                        >
+                                            Concluir Análise
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Step Wizard Navigation Tabs */}
+                                <div className="flex border-b border-gray-200 space-x-2 overflow-x-auto no-print">
+                                    {[
+                                        { step: 1, label: "1. Contexto & Alvo" },
+                                        { step: 2, label: "2. Contingência (A → R → C)" },
+                                        { step: 3, label: "3. Efeitos Emocionais & Probabilidade" },
+                                        { step: 4, label: "4. Processos & Hipótese" },
+                                        { step: 5, label: "5. Mapa Visual Inteiro" }
+                                    ].map(item => (
+                                        <button
+                                            key={item.step}
+                                            onClick={() => setCurrentMolecularStep(item.step)}
+                                            className={`py-3 px-4 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors ${currentMolecularStep === item.step ? 'border-lilas-600 text-lilas-700 bg-lilas-50/50 rounded-t-lg' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                                        >
+                                            {item.label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* STEP 1: CONTEXTO & COMPORTAMENTO-ALVO */}
+                                {currentMolecularStep === 1 && (
+                                    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5">
+                                        <div className="bg-lilas-50 p-4 rounded-xl border border-lilas-100">
+                                            <h4 className="font-semibold text-lilas-800 text-sm flex items-center space-x-2">
+                                                <i data-lucide="help-circle" className="w-4 h-4"></i>
+                                                <span>Perguntas Orientadoras (Co-construção com o Paciente)</span>
+                                            </h4>
+                                            <p className="text-xs text-lilas-900 mt-1">
+                                                Qual situação específica você gostaria de compreender hoje? O que aconteceu, em qual lugar e com quem?
+                                            </p>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-1">Tema da Análise / Situação</label>
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Ex: Discussão em reunião de trabalho / Procrastinar estudo" 
+                                                    value={activeMolecular.tema}
+                                                    onChange={(e) => setActiveMolecular({...activeMolecular, tema: e.target.value})}
+                                                    className="w-full p-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-lilas-400"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-1">Comportamento-Alvo (Específico e Observável)</label>
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Ex: Gritar e fechar a porta com força / Sair da sala sem falar nada" 
+                                                    value={activeMolecular.comportamentoAlvo}
+                                                    onChange={(e) => setActiveMolecular({...activeMolecular, comportamentoAlvo: e.target.value})}
+                                                    className="w-full p-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-lilas-400"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1">Contexto Geral e Ambiente</label>
+                                            <textarea 
+                                                rows="3"
+                                                placeholder="Descreva o local, horário, pessoas presentes e condições do momento..."
+                                                value={activeMolecular.contexto}
+                                                onChange={(e) => setActiveMolecular({...activeMolecular, contexto: e.target.value})}
+                                                className="w-full p-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-lilas-400"
+                                            ></textarea>
+                                        </div>
+
+                                        {!isSharedMode && (
+                                            <div className="pt-3 border-t border-gray-100">
+                                                <label className="block text-xs font-bold text-amber-700 mb-1">🔒 Anotações Clínicas Privadas (Visível apenas para a psicóloga)</label>
+                                                <textarea 
+                                                    rows="2"
+                                                    placeholder="Impressões diagnósticas, linguagem corporal observada, hipóteses preliminares..."
+                                                    value={activeMolecular.anotacoesPrivadas}
+                                                    onChange={(e) => setActiveMolecular({...activeMolecular, anotacoesPrivadas: e.target.value})}
+                                                    className="w-full p-2.5 text-sm bg-amber-50/50 border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-400"
+                                                ></textarea>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* STEP 2: CONTINGÊNCIA TRÍPLICE (A -> R -> C) */}
+                                {currentMolecularStep === 2 && (
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                        {/* Antecedentes */}
+                                        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3 border-t-4 border-t-blue-400">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="font-bold text-gray-900 text-base">Antecedente (A)</h3>
+                                                <span className="text-xs bg-blue-50 text-blue-700 font-semibold px-2 py-0.5 rounded">Gatilhos / Contexto</span>
+                                            </div>
+                                            <p className="text-xs text-gray-500">O que aconteceu imediatamente antes? Onde estava? Quem disse o quê?</p>
+                                            <textarea 
+                                                rows="8"
+                                                placeholder="Registre eventos antecedentes, SDs, OMs, falas de terceiros..."
+                                                value={activeMolecular.contingencia.antecedentes}
+                                                onChange={(e) => setActiveMolecular({
+                                                    ...activeMolecular, 
+                                                    contingencia: {...activeMolecular.contingencia, antecedentes: e.target.value}
+                                                })}
+                                                className="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-400"
+                                            ></textarea>
+                                        </div>
+
+                                        {/* Resposta */}
+                                        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3 border-t-4 border-t-purple-400">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="font-bold text-gray-900 text-base">Resposta (R)</h3>
+                                                <span className="text-xs bg-purple-50 text-purple-700 font-semibold px-2 py-0.5 rounded">Ação / Cognição</span>
+                                            </div>
+                                            <p className="text-xs text-gray-500">Ações observáveis, pensamentos, emoções e reações fisiológicas.</p>
+                                            <textarea 
+                                                rows="8"
+                                                placeholder="Descreva a topografia da resposta, pensamentos automáticos e sensações..."
+                                                value={activeMolecular.contingencia.respostas}
+                                                onChange={(e) => setActiveMolecular({
+                                                    ...activeMolecular, 
+                                                    contingencia: {...activeMolecular.contingencia, respostas: e.target.value}
+                                                })}
+                                                className="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-400"
+                                            ></textarea>
+                                        </div>
+
+                                        {/* Consequências */}
+                                        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3 border-t-4 border-t-emerald-400">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="font-bold text-gray-900 text-base">Consequência (C)</h3>
+                                                <span className="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2 py-0.5 rounded">Mudança Ambiental</span>
+                                            </div>
+                                            <p className="text-xs text-gray-500">O que aconteceu logo em seguida? O que foi ganho ou retirado?</p>
+                                            <textarea 
+                                                rows="8"
+                                                placeholder="Consequências imediatas, reações dos outros, alívio de demandas..."
+                                                value={activeMolecular.contingencia.consequencias}
+                                                onChange={(e) => setActiveMolecular({
+                                                    ...activeMolecular, 
+                                                    contingencia: {...activeMolecular.contingencia consequencias: e.target.value}
+                                                })}
+                                                className="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-400"
+                                            ></textarea>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* STEP 3: EFEITOS EMOCIONAIS E DE PROBABILIDADE */}
+                                {currentMolecularStep === 3 && (
+                                    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5">
+                                        <div className="bg-rosaSoft-100 p-4 rounded-xl border border-rosaSoft-200">
+                                            <h4 className="font-bold text-gray-800 text-sm">Efeitos Independentes do Comportamento (E)</h4>
+                                            <p className="text-xs text-gray-600 mt-0.5">
+                                                Avaliação separada do impacto emocional e do impacto na probabilidade de ocorrência futura.
+                                            </p>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-1">Efeitos Emocionais Relatados</label>
+                                                <textarea 
+                                                    rows="4"
+                                                    placeholder="Ex: Sentimento imediato de alívio seguido de vergonha, desesperança ou culpa horas depois..."
+                                                    value={activeMolecular.contingencia.efeitosEmocionais}
+                                                    onChange={(e) => setActiveMolecular({
+                                                        ...activeMolecular,
+                                                        contingencia: {...activeMolecular.contingencia, efeitosEmocionais: e.target.value}
+                                                    })}
+                                                    className="w-full p-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-lilas-400"
+                                                ></textarea>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-1">Impacto na Probabilidade Futura da Resposta</label>
+                                                <select 
+                                                    value={activeMolecular.contingencia.efeitoProbabilidade}
+                                                    onChange={(e) => setActiveMolecular({
+                                                        ...activeMolecular,
+                                                        contingencia: {...activeMolecular.contingencia, efeitoProbabilidade: e.target.value}
+                                                    })}
+                                                    className="w-full p-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-lilas-400 font-medium mb-3"
+                                                >
+                                                    <option value="Aumentou">Aumentou (Repetição Frequente)</option>
+                                                    <option value="Diminuiu">Diminuiu (Redução do padrão)</option>
+                                                    <option value="Inalterado">Inalterado / Sem dados suficientes</option>
+                                                </select>
+
+                                                <p className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                                    💡 Lembre-se: O fato de uma consequência ser desconfortável não significa punição se a taxa do comportamento continuar aumentando no futuro (ex: reforço negativo por esquiva).
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* STEP 4: PROCESSOS COMPORTAMENTAIS & HIPÓTESE */}
+                                {currentMolecularStep === 4 && (
+                                    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5">
+                                        <h3 className="font-bold text-gray-900 text-lg">Formulação Teórica & Processo Operante</h3>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-1">Processo Comportamental Hipotetizado</label>
+                                                <select 
+                                                    value={activeMolecular.contingencia.processoHipotetizado}
+                                                    onChange={(e) => setActiveMolecular({
+                                                        ...activeMolecular,
+                                                        contingencia: {...activeMolecular.contingencia, processoHipotetizado: e.target.value}
+                                                    })}
+                                                    className="w-full p-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-lilas-400 font-semibold"
+                                                >
+                                                    <option value="Reforçamento Positivo">Reforçamento Positivo (+Acesso / +Atenção)</option>
+                                                    <option value="Reforçamento Negativo">Reforçamento Negativo (Esquiva / Fuga / Extinção de Aversivo)</option>
+                                                    <option value="Punição Positiva">Punição Positiva (+Aversivo)</option>
+                                                    <option value="Punição Negativa">Punição Negativa (-Estímulo Apetitivo)</option>
+                                                    <option value="Extinção Operante">Extinção Operante</option>
+                                                    <option value="Comportamento Respondente Eliciado">Comportamento Respondente Eliciado</option>
+                                                    <option value="Ainda em Investigação">Ainda em Investigação</option>
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-1">Nível de Confiança Clínica</label>
+                                                <select 
+                                                    value={activeMolecular.contingencia.confiancaClinica}
+                                                    onChange={(e) => setActiveMolecular({
+                                                        ...activeMolecular,
+                                                        contingencia: {...activeMolecular.contingencia, confiancaClinica: e.target.value}
+                                                    })}
+                                                    className="w-full p-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-lilas-400"
+                                                >
+                                                    <option value="Baixo">Baixo (Necessita mais dados)</option>
+                                                    <option value="Médio">Médio (Hipótese plausível)</option>
+                                                    <option value="Alto">Alto (Consistência alta)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* STEP 5: VISUAL CONTINGENCY MAP (A -> R -> C -> E) */}
+                                {currentMolecularStep === 5 && (
+                                    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6">
+                                        <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                                            <div>
+                                                <h3 className="font-bold text-gray-900 text-lg">Mapa de Contingência Interativo</h3>
+                                                <p className="text-xs text-gray-500">Visualização sequencial da contingência funcional.</p>
+                                            </div>
+                                            <button 
+                                                onClick={() => setActiveTab('exportar')}
+                                                className="px-4 py-2 bg-lilas-50 text-lilas-700 font-semibold rounded-lg text-xs hover:bg-lilas-100"
+                                            >
+                                                Ver em PDF
+                                            </button>
+                                        </div>
+
+                                        {/* Graphic Diagram Box */}
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 relative">
+                                            {/* Box A */}
+                                            <div className="bg-blue-50/60 border border-blue-200 p-4 rounded-xl space-y-2">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-white px-2 py-0.5 rounded border border-blue-100">
+                                                    Antecedentes (A)
+                                                </span>
+                                                <p className="text-xs text-gray-800 leading-relaxed font-medium">
+                                                    {activeMolecular.contingencia.antecedentes || "Sem registro de antecedentes."}
+                                                </p>
+                                            </div>
+
+                                            {/* Box R */}
+                                            <div className="bg-purple-50/60 border border-purple-200 p-4 rounded-xl space-y-2">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 bg-white px-2 py-0.5 rounded border border-purple-100">
+                                                    Resposta (R)
+                                                </span>
+                                                <p className="text-xs text-gray-800 leading-relaxed font-medium">
+                                                    {activeMolecular.contingencia.respostas || "Sem registro de respostas."}
+                                                </p>
+                                            </div>
+
+                                            {/* Box C */}
+                                            <div className="bg-emerald-50/60 border border-emerald-200 p-4 rounded-xl space-y-2">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-100">
+                                                    Consequência (C)
+                                                </span>
+                                                <p className="text-xs text-gray-800 leading-relaxed font-medium">
+                                                    {activeMolecular.contingencia.consequencias || "Sem registro de consequências."}
+                                                </p>
+                                            </div>
+
+                                            {/* Box E */}
+                                            <div className="bg-rosaSoft-100/60 border border-rosaSoft-200 p-4 rounded-xl space-y-2">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-700 bg-white px-2 py-0.5 rounded border border-rosaSoft-200">
+                                                    Efeitos & Processo (E/P)
+                                                </span>
+                                                <p className="text-xs text-gray-800 leading-relaxed">
+                                                    <strong className="block text-gray-900">Efeitos:</strong> {activeMolecular.contingencia.efeitosEmocionais || "N/A"}
+                                                </p>
+                                                <span className="inline-block mt-2 text-[11px] font-bold text-lilas-700 bg-white px-2 py-0.5 rounded border border-lilas-200">
+                                                    {activeMolecular.contingencia.processoHipotetizado}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Bottom Wizard Buttons */}
+                                <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                                    <button
+                                        disabled={currentMolecularStep === 1}
+                                        onClick={() => setCurrentMolecularStep(prev => Math.max(1, prev - 1))}
+                                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-40"
+                                    >
+                                        ← Voltar Etapa
+                                    </button>
+
+                                    <span className="text-xs text-gray-500 font-medium">Etapa {currentMolecularStep} de 5</span>
+
+                                    <button
+                                        disabled={currentMolecularStep === 5}
+                                        onClick={() => setCurrentMolecularStep(prev => Math.min(5, prev + 1))}
+                                        className="px-4 py-2 bg-lilas-500 hover:bg-lilas-600 text-white rounded-lg text-sm font-medium shadow-sm"
+                                    >
+                                        Avançar Etapa →
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 4: ANÁLISE MOLAR */}
+                        {activeTab === 'molar' && (
+                            <div className="space-y-6">
+                                <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+                                    <span className="text-xs font-semibold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-md border border-purple-100">
+                                        Módulo Molar (Macroanálise & História de Aprendizagem)
+                                    </span>
+                                    <h2 className="text-xl font-bold text-gray-900 mt-2">Padrões Comportamentais Recorrentes</h2>
+                                    <p className="text-xs text-gray-500">Integração de histórico de vida, classes de resposta e custos a longo prazo.</p>
+                                </div>
+
+                                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1">História de Vida & Desenvolvimento Relevante</label>
+                                        <textarea 
+                                            rows="3"
+                                            placeholder="Experiências precoces, regras familiares transmitidas, marcos de desenvolvimento..."
+                                            value={activeMolar.historiaAprendizagem}
+                                            onChange={(e) => setActiveMolar({...activeMolar, historiaAprendizagem: e.target.value})}
+                                            className="w-full p-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-lilas-400"
+                                        ></textarea>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1">Classes de Respostas Recorrentes (Padrões Molares)</label>
+                                        <textarea 
+                                            rows="3"
+                                            placeholder="Ex: Padrão generalizado de esquiva interpessoal diante de crítica percebida..."
+                                            value={activeMolar.padroesRecorrentes}
+                                            onChange={(e) => setActiveMolar({...activeMolar, padroesRecorrentes: e.target.value})}
+                                            className="w-full p-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-lilas-400"
+                                        ></textarea>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1">Custos Cumulativos a Longo Prazo</label>
+                                        <textarea 
+                                            rows="3"
+                                            placeholder="Prejuízos acumulados nas relações, carreira, saúde mental e autonomia..."
+                                            value={activeMolar.consequenciasCumulativas}
+                                            onChange={(e) => setActiveMolar({...activeMolar, consequenciasCumulativas: e.target.value})}
+                                            className="w-full p-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-lilas-400"
+                                        ></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 5: PLANO DE INTERVENÇÃO */}
+                        {activeTab === 'intervencao' && (
+                            <div className="space-y-6">
+                                <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+                                    <h2 className="text-xl font-bold text-gray-900">Plano de Intervenção Terapêutica</h2>
+                                    <p className="text-xs text-gray-500">Objetivos, manejo de antecedentes e treino de repertórios alternativos.</p>
+                                </div>
+
+                                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1">Objetivos Terapêuticos Acordados</label>
+                                            <textarea rows="4" placeholder="Metas claras e viáveis para o paciente..." className="w-full p-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-lilas-400"></textarea>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1">Manejo de Antecedentes (Alterações Ambientais)</label>
+                                            <textarea rows="4" placeholder="Estratégias para alterar pistas ambientais e previsibilidade..." className="w-full p-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-lilas-400"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 6: EXPORTAR / GERAÇÃO DE PDF IMPECÁVEL */}
+                        {activeTab === 'exportar' && (
+                            <div className="space-y-6">
+                                {/* Print Controls Bar (Hidden during actual print) */}
+                                <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 no-print">
+                                    <div>
+                                        <h2 className="text-xl font-bold text-gray-900">Gerar Relatório & PDF Profissional</h2>
+                                        <p className="text-xs text-gray-500">Pré-visualize e exporte o documento formatado para A4.</p>
+                                    </div>
+
+                                    <button 
+                                        onClick={handlePrintPDF}
+                                        className="px-6 py-2.5 bg-lilas-600 hover:bg-lilas-700 text-white font-bold rounded-xl text-sm shadow-md transition-all flex items-center space-x-2 self-start"
+                                    >
+                                        <i data-lucide="printer" className="w-4 h-4"></i>
+                                        <span>Imprimir / Salvar como PDF</span>
+                                    </button>
+                                </div>
+
+                                {/* PDF Printable Document Sheet */}
+                                <div className="bg-white p-8 md:p-12 rounded-2xl border border-gray-300 shadow-lg max-w-4xl mx-auto print-container">
+                                    
+                                    {/* FIXED HEADER FOR PDF */}
+                                    <div className="border-b-2 border-lilas-500 pb-4 mb-6 flex justify-between items-start">
+                                        <div>
+                                            <h1 className="text-xl font-bold text-gray-900 uppercase tracking-tight">{profile.nome}</h1>
+                                            <p className="text-xs font-mono font-bold text-lilas-700">CRP: {profile.crp}</p>
+                                            <p className="text-[11px] text-gray-500 mt-0.5">{profile.consultorio}</p>
+                                        </div>
+                                        <div className="text-right text-xs text-gray-500">
+                                            <p className="font-semibold text-gray-700">Relatório de Análise Funcional</p>
+                                            <p>{new Date().toLocaleDateString('pt-BR')}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Patient Banner */}
+                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6 grid grid-cols-2 gap-2 text-xs">
+                                        <div>
+                                            <span className="text-gray-500 font-semibold">Paciente:</span>{' '}
+                                            <span className="font-bold text-gray-900">{activeMolecular.pacienteNome || "Lucas Mendes (Exemplo)"}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-gray-500 font-semibold">Tema da Análise:</span>{' '}
+                                            <span className="font-bold text-gray-900">{activeMolecular.tema || "Análise do Comportamento"}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* A -> R -> C Visual Diagram for Print */}
+                                    <div className="mb-8 page-break-inside-avoid">
+                                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b border-gray-200 pb-1">
+                                            Diagrama da Contingência Functional (A → R → C)
+                                        </h3>
+                                        <div className="grid grid-cols-3 gap-3 border border-gray-300 p-3 rounded-lg bg-gray-50/30">
+                                            <div className="border border-blue-200 bg-blue-50/40 p-3 rounded">
+                                                <p className="text-[10px] font-bold text-blue-800 uppercase mb-1">Antecedente (A)</p>
+                                                <p className="text-xs text-gray-800">{activeMolecular.contingencia.antecedentes || "Não especificado."}</p>
+                                            </div>
+                                            <div className="border border-purple-200 bg-purple-50/40 p-3 rounded">
+                                                <p className="text-[10px] font-bold text-purple-800 uppercase mb-1">Resposta (R)</p>
+                                                <p className="text-xs text-gray-800">{activeMolecular.contingencia.respostas || "Não especificado."}</p>
+                                            </div>
+                                            <div className="border border-emerald-200 bg-emerald-50/40 p-3 rounded">
+                                                <p className="text-[10px] font-bold text-emerald-800 uppercase mb-1">Consequência (C)</p>
+                                                <p className="text-xs text-gray-800">{activeMolecular.contingencia.consequencias || "Não especificado."}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Detailed Sections */}
+                                    <div className="space-y-6 text-xs text-gray-800">
+                                        <div className="page-break-inside-avoid">
+                                            <h4 className="font-bold text-gray-900 border-b border-gray-200 pb-1 mb-2">Efeitos Emocionais & Probabilidade Futura</h4>
+                                            <p className="bg-gray-50 p-3 rounded border border-gray-100">
+                                                {activeMolecular.contingencia.efeitosEmocionais || "Sem registro."}
+                                            </p>
+                                        </div>
+
+                                        <div className="page-break-inside-avoid">
+                                            <h4 className="font-bold text-gray-900 border-b border-gray-200 pb-1 mb-2">Processo Comportamental Hipotetizado</h4>
+                                            <p className="font-semibold text-lilas-700 bg-lilas-50 p-2.5 rounded border border-lilas-100 inline-block">
+                                                {activeMolecular.contingencia.processoHipotetizado}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* FIXED FOOTER FOR PDF */}
+                                    <div className="mt-12 pt-6 border-t border-gray-200 text-center text-[10px] text-gray-500 space-y-4 page-break-inside-avoid">
+                                        <p className="italic">Documento confidencial emitido para fins estritamente clínicos psicológicos.</p>
+                                        <div className="pt-8 flex justify-center">
+                                            <div className="border-t border-gray-400 w-64 text-center pt-1">
+                                                <p className="font-bold text-gray-800">{profile.nome}</p>
+                                                <p className="text-gray-600">Psicóloga • CRP {profile.crp}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 7: PERFIL PROFISSIONAL */}
+                        {activeTab === 'config' && (
+                            <div className="space-y-6">
+                                <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+                                    <h2 className="text-xl font-bold text-gray-900">Configurações do Perfil Profissional</h2>
+                                    <p className="text-xs text-gray-500">Dados do cabeçalho e rodapé dos documentos e relatórios em PDF.</p>
+                                </div>
+
+                                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4 max-w-xl">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1">Nome Completo</label>
+                                        <input 
+                                            type="text" 
+                                            value={profile.nome}
+                                            onChange={(e) => setProfile({...profile, nome: e.target.value})}
+                                            className="w-full p-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-lilas-400"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1">CRP</label>
+                                        <input 
+                                            type="text" 
+                                            value={profile.crp}
+                                            onChange={(e) => setProfile({...profile, crp: e.target.value})}
+                                            className="w-full p-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-lilas-400 font-mono"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1">E-mail Profissional</label>
+                                        <input 
+                                            type="email" 
+                                            value={profile.email}
+                                            onChange={(e) => setProfile({...profile, email: e.target.value})}
+                                            className="w-full p-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-lilas-400"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1">Consultório / Clínica</label>
+                                        <input 
+                                            type="text" 
+                                            value={profile.consultorio}
+                                            onChange={(e) => setProfile({...profile, consultorio: e.target.value})}
+                                            className="w-full p-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-lilas-400"
+                                        />
+                                    </div>
+
+                                    <button 
+                                        onClick={triggerAutoSave}
+                                        className="px-5 py-2.5 bg-lilas-500 hover:bg-lilas-600 text-white rounded-lg text-sm font-semibold shadow-sm"
+                                    >
+                                        Salvar Alterações
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                    </main>
+
+                    {/* MODAL: CADASTRO / EDIÇÃO DE PACIENTE */}
+                    {isPatientModalOpen && (
+                        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
+                            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 space-y-4">
+                                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                                    <h3 className="font-bold text-gray-900 text-base">
+                                        {editingPatient ? 'Editar Paciente' : 'Novo Cadastramento de Paciente'}
+                                    </h3>
+                                    <button onClick={() => setIsPatientModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                                </div>
+
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const formData = new FormData(e.target);
+                                    handleSavePatient({
+                                        id: editingPatient ? editingPatient.id : null,
+                                        nome: formData.get('nome'),
+                                        idade: Number(formData.get('idade')),
+                                        categoria: formData.get('categoria'),
+                                        responsavel: formData.get('responsavel'),
+                                        contato: formData.get('contato'),
+                                        observacoes: formData.get('observacoes'),
+                                        status: editingPatient ? editingPatient.status : 'Ativo'
+                                    });
+                                }} className="space-y-3">
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1">Nome Completo do Paciente</label>
+                                        <input 
+                                            name="nome" 
+                                            required 
+                                            defaultValue={editingPatient?.nome || ''} 
+                                            className="w-full p-2 text-sm bg-gray-50 border border-gray-200 rounded-lg"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1">Idade</label>
+                                            <input 
+                                                name="idade" 
+                                                type="number" 
+                                                required 
+                                                defaultValue={editingPatient?.idade || ''} 
+                                                className="w-full p-2 text-sm bg-gray-50 border border-gray-200 rounded-lg"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1">Categoria</label>
+                                            <select 
+                                                name="categoria" 
+                                                defaultValue={editingPatient?.categoria || 'Adolescente'} 
+                                                className="w-full p-2 text-sm bg-gray-50 border border-gray-200 rounded-lg"
+                                            >
+                                                <option value="Adolescente">Adolescente</option>
+                                                <option value="Adulto">Adulto</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1">Responsável Legal (se menor)</label>
+                                        <input 
+                                            name="responsavel" 
+                                            defaultValue={editingPatient?.responsavel || ''} 
+                                            className="w-full p-2 text-sm bg-gray-50 border border-gray-200 rounded-lg"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1">Contato / Telefone</label>
+                                        <input 
+                                            name="contato" 
+                                            defaultValue={editingPatient?.contato || ''} 
+                                            className="w-full p-2 text-sm bg-gray-50 border border-gray-200 rounded-lg"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1">Observações Iniciais</label>
+                                        <textarea 
+                                            name="observacoes" 
+                                            rows="2" 
+                                            defaultValue={editingPatient?.observacoes || ''} 
+                                            className="w-full p-2 text-sm bg-gray-50 border border-gray-200 rounded-lg"
+                                        ></textarea>
+                                    </div>
+
+                                    <div className="pt-3 border-t border-gray-100 flex justify-end space-x-2">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setIsPatientModalOpen(false)} 
+                                            className="px-4 py-2 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button 
+                                            type="submit" 
+                                            className="px-4 py-2 text-xs font-medium text-white bg-lilas-500 rounded-lg hover:bg-lilas-600"
+                                        >
+                                            Salvar Paciente
+                                        </button>
+                                    </div>
