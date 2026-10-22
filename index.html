@@ -51,22 +51,33 @@
       font-family: 'Inter', sans-serif;
     }
     
-    /* Regras estritas de renderização A4 do PDF com texto justificado */
+    /* Regras estritas de renderização A4 do PDF com texto justificado e alinhamento interno corrigido */
     .pdf-page {
       width: 210mm;
       min-height: 297mm;
-      padding: 15mm 18mm 15mm 18mm;
+      padding: 12mm 15mm 12mm 15mm;
       background: #ffffff;
       color: #2D3748;
       box-sizing: border-box;
       margin: 0 auto;
-      font-size: 11pt;
-      line-height: 1.45;
+      font-size: 10pt;
+      line-height: 1.4;
       text-align: justify;
     }
 
     .pdf-page p, .pdf-page span, .pdf-page li, .pdf-page div {
       text-align: justify;
+      word-break: break-word;
+    }
+
+    /* Correção de campos do grid de identificação no PDF para evitar sobreposições e desalinhamentos */
+    .pdf-grid-box {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 6px 10px;
+      box-sizing: border-box;
+      overflow: hidden;
     }
 
     .pdf-keep-together {
@@ -154,7 +165,7 @@
             </button>
           </div>
           <h2 class="text-2xl font-bold font-display mt-2">Bem-vinda, <span id="dash-prof-nome">Dra. Daniele Sousa Santos</span></h2>
-          <p class="text-rose-100 text-sm mt-1 max-w-2xl">Gerencie prontuários, anamneses por faixa etária, evoluções e análises comportamentais rigorosas.</p>
+          <p class="text-rose-100 text-sm mt-1 max-w-2xl">Gerencie prontuários, anamneses por faixa etária, evoluções, planejamento, supervisão e análises comportamentais.</p>
           <div class="mt-4 flex flex-wrap gap-3">
             <button onclick="novaAnaliseFuncional()" class="bg-white text-brand-main font-semibold px-4 py-2 rounded-xl text-sm shadow hover:bg-rose-50 transition-all">
               <i class="fa-solid fa-plus mr-1"></i> Nova Análise Funcional
@@ -202,7 +213,7 @@
         <div class="bg-white rounded-xl p-5 border border-rose-100 card-shadow flex items-center justify-between">
           <div>
             <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Padrão do Sistema</p>
-            <h3 class="text-sm font-bold text-emerald-600 mt-1"><i class="fa-solid fa-circle-check mr-1"></i> A4 PDF Ativo</h3>
+            <h3 class="text-sm font-bold text-emerald-600 mt-1"><i class="fa-solid fa-circle-check mr-1"></i> A4 PDF Corrigido</h3>
           </div>
           <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 text-xl">
             <i class="fa-solid fa-file-pdf"></i>
@@ -241,7 +252,7 @@
       <div class="flex justify-between items-center">
         <div>
           <h2 class="text-2xl font-bold text-brand-dark">Prontuários e Pacientes</h2>
-          <p class="text-sm text-gray-500">Cadastre e acompanhe o histórico e anamneses dos clientes.</p>
+          <p class="text-sm text-gray-500">Cadastre e acompanhe o histórico, anamneses, evoluções e planejamentos dos clientes.</p>
         </div>
         <button onclick="abrirModalNovoPaciente()" class="bg-brand-main text-white px-4 py-2.5 rounded-xl font-medium text-sm shadow hover:bg-brand-alt transition-all">
           <i class="fa-solid fa-user-plus mr-1.5"></i> Cadastrar Paciente
@@ -252,7 +263,7 @@
       </div>
     </section>
 
-    <!-- VIEW 2.1: DETALHE DO PRONTUÁRIO / ANAMNESE, EVOLUÇÕES E ANOTAÇÕES -->
+    <!-- VIEW 2.1: DETALHE DO PRONTUÁRIO / ANAMNESE, EVOLUÇÕES, ANOTAÇÕES E PLANEJAMENTO/SUPERVISÃO -->
     <section id="view-prontuario-detalhe" class="tab-content hidden space-y-6">
       <div class="bg-white rounded-2xl p-5 border border-rose-100 card-shadow flex flex-wrap justify-between items-center gap-4">
         <div class="flex items-center space-x-3">
@@ -275,15 +286,18 @@
             <i class="fa-solid fa-notes-medical mr-1"></i> Anamnese
           </button>
           <button onclick="alternarAbaProntuario('evolucoes')" id="subnav-evolucoes" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:text-brand-main transition-all">
-            <i class="fa-solid fa-file-waveform mr-1"></i> Evoluções Clínicas
+            <i class="fa-solid fa-file-waveform mr-1"></i> Evoluções
           </button>
           <button onclick="alternarAbaProntuario('anotacoes')" id="subnav-anotacoes" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:text-brand-main transition-all">
-            <i class="fa-solid fa-book-open-reader mr-1"></i> Folhas de Sessão & Anexos
+            <i class="fa-solid fa-book-open-reader mr-1"></i> Folhas de Sessão
+          </button>
+          <button onclick="alternarAbaProntuario('planejamento')" id="subnav-planejamento" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:text-brand-main transition-all">
+            <i class="fa-solid fa-compass-drafting mr-1"></i> Planejamento & Supervisão
           </button>
         </div>
       </div>
 
-      <!-- ABA INTERNA 1: ANAMNESE PSICOLÓGICA -->
+      <!-- ABA 1: ANAMNESE PSICOLÓGICA -->
       <div id="aba-conteudo-anamnese" class="space-y-6">
         <div class="flex justify-end space-x-2 bg-white p-4 rounded-2xl border border-rose-100 card-shadow">
           <button onclick="salvarRascunhoAnamnese()" class="bg-white text-gray-700 border border-gray-300 font-semibold px-4 py-2 rounded-xl text-xs hover:bg-gray-50 transition-all flex items-center">
@@ -302,7 +316,7 @@
         </div>
       </div>
 
-      <!-- ABA INTERNA 2: EVOLUÇÕES CLÍNICAS -->
+      <!-- ABA 2: EVOLUÇÕES CLÍNICAS -->
       <div id="aba-conteudo-evolucoes" class="hidden space-y-6">
         <div class="bg-white rounded-2xl p-6 border border-rose-100 card-shadow flex justify-between items-center">
           <div>
@@ -321,7 +335,7 @@
         </div>
       </div>
 
-      <!-- ABA INTERNA 3: FOLHA DE ANOTAÇÕES POR SESSÃO & ANEXOS -->
+      <!-- ABA 3: FOLHA DE ANOTAÇÕES POR SESSÃO & ANEXOS -->
       <div id="aba-conteudo-anotacoes" class="hidden space-y-6">
         <div class="bg-white rounded-2xl p-6 border border-rose-100 card-shadow space-y-4">
           <div class="flex justify-between items-center border-b border-rose-100 pb-2">
@@ -382,6 +396,25 @@
           <div id="lista-folhas-sessao" class="space-y-3">
             <!-- Renderizado via JS -->
           </div>
+        </div>
+      </div>
+
+      <!-- ABA 4: PLANEJAMENTO E SUPERVISÃO DAS PRÓXIMAS SESSÕES -->
+      <div id="aba-conteudo-planejamento" class="hidden space-y-6">
+        <div class="bg-white rounded-2xl p-6 border border-rose-100 card-shadow flex justify-between items-center">
+          <div>
+            <h3 class="text-md font-bold text-brand-dark flex items-center">
+              <i class="fa-solid fa-compass-drafting text-brand-main mr-2"></i> Planejamento Clínico e Supervisão
+            </h3>
+            <p class="text-xs text-gray-500 mt-0.5">Organize objetivos, estratégias futuras e registros de supervisão clínica.</p>
+          </div>
+          <button onclick="abrirModalPlanejamento()" class="bg-brand-main text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow hover:bg-brand-alt transition-all flex items-center">
+            <i class="fa-solid fa-plus mr-1.5"></i> Adicionar Novo Planejamento
+          </button>
+        </div>
+
+        <div id="lista-planejamentos-paciente" class="space-y-4">
+          <!-- Renderizado via JS -->
         </div>
       </div>
     </section>
@@ -674,6 +707,80 @@
     </div>
   </div>
 
+  <!-- MODAL DE PLANEJAMENTO E SUPERVISÃO -->
+  <div id="modal-planejamento" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl space-y-4 border border-rose-100 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-rose-100 pb-3">
+        <div>
+          <h3 class="font-bold text-brand-dark text-lg flex items-center">
+            <i class="fa-solid fa-compass-drafting text-brand-main mr-2"></i> Folha de Planejamento e Supervisão das Próximas Sessões
+          </h3>
+          <p class="text-xs text-gray-500">Planejamento clínico estruturado e registro de supervisão.</p>
+        </div>
+        <button onclick="fecharModalPlanejamento()" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="form-planejamento-clinico" onsubmit="salvarPlanejamentoClinico(event)" class="space-y-4 text-xs">
+        <div class="bg-rose-50/50 p-3 rounded-xl border border-rose-100 grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
+          <div><b>Profissional:</b> <span id="plan-prof-display">Dra. Daniele Sousa Santos</span> (CRP 22/07398)</div>
+          <div><b>Paciente:</b> <span id="plan-pac-display">--</span></div>
+          <div><b>Data Elaboração:</b> <input type="date" id="plan-data-el" required class="mt-1 px-2 py-1 bg-white border rounded"></div>
+          <div><b>Data Prevista Próxima Sessão:</b> <input type="date" id="plan-data-prev" class="mt-1 px-2 py-1 bg-white border rounded"></div>
+          <div><b>Status do Registro:</b> 
+            <select id="plan-status" class="mt-1 px-2 py-1 bg-white border rounded font-bold text-brand-main">
+              <option value="Rascunho">Rascunho</option>
+              <option value="Concluída">Concluído</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <h4 class="font-bold text-brand-dark border-b pb-1">1. Síntese da Sessão Anterior</h4>
+          <textarea id="plan-sintese-ant" rows="3" class="w-full p-2.5 border rounded-xl outline-none" placeholder="Principais aspectos observados, demandas trabalhadas, respostas às intervenções e pontos a retomar..."></textarea>
+        </div>
+
+        <div class="space-y-3">
+          <h4 class="font-bold text-brand-dark border-b pb-1">2. Objetivos para as Próximas Sessões</h4>
+          <textarea id="plan-objetivos" rows="3" class="w-full p-2.5 border rounded-xl outline-none" placeholder="Objetivo clínico principal, específicos, habilidades/repertórios e comportamentos a acompanhar..."></textarea>
+        </div>
+
+        <div class="space-y-3">
+          <h4 class="font-bold text-brand-dark border-b pb-1">3. Planejamento das Intervenções</h4>
+          <textarea id="plan-intervencoes" rows="3" class="w-full p-2.5 border rounded-xl outline-none" placeholder="Procedimentos previstos, atividades, perguntas/temas a explorar e generalização de repertórios..."></textarea>
+        </div>
+
+        <div class="space-y-3">
+          <h4 class="font-bold text-brand-dark border-b pb-1">4. Indicadores de Acompanhamento</h4>
+          <textarea id="plan-indicadores" rows="3" class="w-full p-2.5 border rounded-xl outline-none" placeholder="Comportamentos observados, indicadores de progresso e critérios para ajuste..."></textarea>
+        </div>
+
+        <div class="space-y-3">
+          <h4 class="font-bold text-brand-dark border-b pb-1">5. Orientações e Pontos de Atenção</h4>
+          <textarea id="plan-orientacoes" rows="3" class="w-full p-2.5 border rounded-xl outline-none" placeholder="Aspectos relevantes, orientações profissionais e pontos para discussão em supervisão..."></textarea>
+        </div>
+
+        <div class="bg-blue-50/40 p-4 rounded-xl border border-blue-100 space-y-3">
+          <h4 class="font-bold text-blue-900 border-b border-blue-200 pb-1 flex items-center">
+            <i class="fa-solid fa-user-shield mr-2"></i> 6. Registro de Supervisão Clínica (Opcional)
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div><label class="font-semibold block mb-1">Data da Supervisão</label><input type="date" id="sup-data" class="w-full p-2 bg-white border rounded-xl"></div>
+            <div><label class="font-semibold block mb-1">Questões Clínicas Apresentadas</label><input type="text" id="sup-questoes" class="w-full p-2 bg-white border rounded-xl" placeholder="Resumo das dúvidas ou casos"></div>
+          </div>
+          <div><label class="font-semibold block mb-1">Discussões e Hipóteses Funcionais</label><textarea id="sup-hipoteses" rows="2" class="w-full p-2 bg-white border rounded-xl" placeholder="Discussão teórica/analítica..."></textarea></div>
+          <div><label class="font-semibold block mb-1">Recomendações Recebidas e Ajustes Definidos</label><textarea id="sup-recomendacoes" rows="2" class="w-full p-2 bg-white border rounded-xl" placeholder="Orientações e mudanças no plano..."></textarea></div>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-3 border-t">
+          <button type="button" onclick="fecharModalPlanejamento()" class="px-4 py-2 rounded-xl text-gray-600 bg-gray-100 font-semibold">Cancelar</button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-white bg-brand-main font-bold shadow hover:bg-brand-alt">Salvar Planejamento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- MODAL DE EDIÇÃO DOS DADOS DA PROFISSIONAL -->
   <div id="modal-editar-profissional" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-rose-100">
@@ -722,14 +829,14 @@
     </div>
   </div>
 
-  <!-- MODAL DE PRÉ-VISUALIZAÇÃO AO VIVO DO PDF (A4 IMPECÁVEL) -->
+  <!-- MODAL DE PRÉ-VISUALIZAÇÃO AO VIVO DO PDF (A4 IMPECÁVEL - CORRIGIDO) -->
   <div id="modal-pdf" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-start p-2 sm:p-6 overflow-y-auto">
     <div class="w-full max-w-4xl bg-white rounded-t-2xl px-6 py-4 border-b border-gray-200 flex flex-wrap justify-between items-center gap-3 sticky top-0 z-10 shadow-md">
       <div>
         <h3 class="font-bold text-brand-dark text-lg flex items-center">
-          <i class="fa-solid fa-file-pdf text-brand-main mr-2"></i> Documento A4 Clínico Oficial
+          <i class="fa-solid fa-file-pdf text-brand-main mr-2"></i> Documento A4 Clínico Oficial (Corrigido)
         </h3>
-        <p class="text-xs text-gray-500">Pré-visualização fiel ao documento formatado.</p>
+        <p class="text-xs text-gray-500">Pré-visualização com alinhamento, margens e caixas ajustadas.</p>
       </div>
 
       <div class="flex items-center space-x-2">
@@ -750,62 +857,63 @@
       <div id="pdf-render-target" class="pdf-page bg-white shadow-2xl relative font-sans text-gray-800">
         
         <!-- CABEÇALHO DO DOCUMENTO CLÍNICO -->
-        <div class="flex justify-between items-start border-b-2 border-[#B85C83] pb-4 mb-4">
+        <div class="flex justify-between items-start border-b-2 border-[#B85C83] pb-3 mb-3">
           <div>
-            <h1 class="text-lg font-extrabold tracking-wide text-[#1A365D] uppercase font-display" style="letter-spacing: 0.5px;" id="pdf-prof-nome">DANIELE SOUSA SANTOS</h1>
+            <h1 class="text-base font-extrabold tracking-wide text-[#1A365D] uppercase font-display" style="letter-spacing: 0.5px;" id="pdf-prof-nome">DANIELE SOUSA SANTOS</h1>
             <p class="text-xs font-semibold text-[#B85C83] mt-0.5" id="pdf-prof-sub"><span id="pdf-prof-crp">CRP 22/07398</span> • <span id="pdf-prof-especialidade">Psicóloga Analista do Comportamento</span></p>
-            <p class="text-[10px] text-gray-600 font-medium mt-1">Clínica de Psicologia & Análise do Comportamento</p>
-            <p class="text-[10px] text-gray-500" id="pdf-prof-contato">(98) 98765-4321 | contato@danielesousa.psico.br</p>
+            <p class="text-[9.5px] text-gray-600 font-medium mt-0.5">Clínica de Psicologia & Análise do Comportamento</p>
+            <p class="text-[9.5px] text-gray-500" id="pdf-prof-contato">(98) 98765-4321 | contato@danielesousa.psico.br</p>
           </div>
 
           <div class="text-right">
-            <span id="pdf-badge-confidencial" class="inline-block bg-[#F7EBEF] text-[#B85C83] border border-[#B85C83]/30 text-[9px] font-extrabold px-2.5 py-1 rounded tracking-wider uppercase">
+            <span id="pdf-badge-confidencial" class="inline-block bg-[#F7EBEF] text-[#B85C83] border border-[#B85C83]/30 text-[8.5px] font-extrabold px-2 py-0.5 rounded tracking-wider uppercase">
               DOCUMENTO CONFIDENCIAL
             </span>
-            <p class="text-[9px] text-gray-500 mt-1.5" id="pdf-emissao-data">Emissão: --/--/----, --:--</p>
+            <p class="text-[8.5px] text-gray-500 mt-1" id="pdf-emissao-data">Emissão: --/--/----, --:--</p>
           </div>
         </div>
 
-        <div class="bg-[#F0F4F8] border-l-4 border-[#B85C83] p-3 rounded-r-lg mb-4">
-          <h2 class="text-sm font-bold text-[#1A365D] uppercase tracking-wide" id="pdf-titulo-relatorio">
+        <div class="bg-[#F0F4F8] border-l-4 border-[#B85C83] p-2.5 rounded-r-lg mb-3">
+          <h2 class="text-xs font-bold text-[#1A365D] uppercase tracking-wide" id="pdf-titulo-relatorio">
             RELATÓRIO CLÍNICO
           </h2>
         </div>
 
-        <div class="border border-gray-200 rounded-lg overflow-hidden mb-4 bg-gray-50/50">
+        <!-- QUADRO CORRIGIDO DE IDENTIFICAÇÃO DO PACIENTE (SEM SOBREPOSIÇÕES) -->
+        <div class="border border-gray-200 rounded-lg overflow-hidden mb-3 bg-gray-50/50">
           <div class="grid grid-cols-2 text-xs">
-            <div class="p-2.5 border-r border-b border-gray-200">
-              <span class="text-[10px] font-bold text-gray-400 uppercase block">Paciente</span>
-              <span class="font-bold text-[#1A365D] text-xs" id="pdf-paciente-nome">--</span>
+            <div class="pdf-grid-box border-r border-b border-gray-200">
+              <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Paciente</span>
+              <span class="font-bold text-[#1A365D] text-xs truncate" id="pdf-paciente-nome">--</span>
             </div>
-            <div class="p-2.5 border-b border-gray-200">
-              <span class="text-[10px] font-bold text-gray-400 uppercase block">Tipo / Documento</span>
-              <span class="font-semibold text-gray-800 text-xs" id="pdf-paciente-tema">--</span>
+            <div class="pdf-grid-box border-b border-gray-200">
+              <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Tipo / Documento</span>
+              <span class="font-semibold text-gray-800 text-xs truncate" id="pdf-paciente-tema">--</span>
             </div>
-            <div class="p-2.5 border-r border-gray-200">
-              <span class="text-[10px] font-bold text-gray-400 uppercase block">Data da Sessão / Emissão</span>
-              <span class="font-medium text-gray-700 text-xs" id="pdf-paciente-data">--</span>
+            <div class="pdf-grid-box border-r border-gray-200">
+              <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Data da Sessão / Emissão</span>
+              <span class="font-medium text-gray-700 text-xs truncate" id="pdf-paciente-data">--</span>
             </div>
-            <div class="p-2.5">
-              <span class="text-[10px] font-bold text-gray-400 uppercase block">Status do Registro</span>
-              <span class="inline-block bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded" id="pdf-paciente-status">Concluída</span>
+            <div class="pdf-grid-box">
+              <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Status do Registro</span>
+              <span class="inline-block bg-emerald-100 text-emerald-800 text-[9.5px] font-bold px-2 py-0.5 rounded mt-0.5 w-fit" id="pdf-paciente-status">Concluída</span>
             </div>
           </div>
         </div>
 
-        <!-- CONTEÚDO CORPO DO PDF -->
-        <div id="pdf-corpo-conteudo" class="space-y-4">
+        <!-- CONTEÚDO CORPO DO PDF COM ESPAÇAMENTOS E JUSTIFICAÇÃO CORRIGIDOS -->
+        <div id="pdf-corpo-conteudo" class="space-y-3">
           <!-- Dinâmico -->
         </div>
 
         <!-- RODAPÉ ÉTICO E ASSINATURA -->
-        <div class="mt-8 pt-4 border-t border-gray-200 text-center pdf-keep-together">
-          <div class="max-w-xs mx-auto mb-2">
+        <div class="mt-6 pt-3 border-t border-gray-200 text-center pdf-keep-together">
+          <div class="max-w-xs mx-auto mb-1.5">
             <div class="border-b border-gray-400 mb-1"></div>
             <p class="text-xs font-bold text-[#1A365D]" id="pdf-ass-nome">Daniele Sousa Santos</p>
-            <p class="text-[10px] text-[#B85C83] font-semibold" id="pdf-ass-crp">CRP 22/07398 • Psicóloga Analista do Comportamento</p>
+            <p class="text-[9.5px] text-[#B85C83] font-semibold" id="pdf-ass-crp">CRP 22/07398 • Psicóloga Analista do Comportamento</p>
           </div>
-          <p class="text-[8.5px] text-gray-400 max-w-lg mx-auto leading-tight mt-3">
+          <p class="text-[8px] text-gray-400 max-w-lg mx-auto leading-tight mt-2">
             Documento confidencial para uso profissional e registro clínico. Manuseio restrito às pessoas autorizadas, observadas as normas éticas e legais aplicáveis (Código de Ética Profissional do Psicólogo).
           </p>
         </div>
@@ -848,12 +956,14 @@
     let MOCK_PACIENTES = [
       { id: 'pac-1', nome: 'Lucas Mendes Ribeiro', nascimento: '1998-05-12', idade: 28, queixa: 'Dificuldades assertivas e esquiva interpessoal', ultimaSessao: '2026-10-21' },
       { id: 'pac-2', nome: 'Mariana Costa Silva', nascimento: '1992-09-15', idade: 34, queixa: 'Ansiedade de desempenho e esquiva experiencial', ultimaSessao: '2026-10-18' },
-      { id: 'pac-3', nome: 'Sofia Mendes Santos', nascimento: '2016-03-10', idade: 10, queixa: 'Seletividade alimentar e rigidez de rotina', ultimaSessao: '2026-10-15' }
+      { id: 'pac-3', nome: 'Sofia Mendes Santos', nascimento: '2016-03-10', idade: 10, queixa: 'Seletividade alimentar e rigidez de rotina', ultimaSessao: '2026-10-15' },
+      { id: 'pac-4', nome: 'Raul teixeira Noleto', nascimento: '1995-04-20', idade: 31, queixa: 'Procrastinação e fusão cognitiva', ultimaSessao: '2026-10-22' }
     ];
 
     let bancoAnamneses = {};
     let bancoAnotacoesSessao = {};
     let bancoEvolucoes = {};
+    let bancoPlanejamentos = {};
 
     const EXEMPLO_ANALISE_TECNICA = {
       paciente: "Lucas Mendes Ribeiro",
@@ -894,6 +1004,7 @@
       localStorage.setItem('daniele_anamneses', JSON.stringify(bancoAnamneses));
       localStorage.setItem('daniele_anotacoes', JSON.stringify(bancoAnotacoesSessao));
       localStorage.setItem('daniele_evolucoes', JSON.stringify(bancoEvolucoes));
+      localStorage.setItem('daniele_planejamentos', JSON.stringify(bancoPlanejamentos));
       localStorage.setItem('daniele_analises', JSON.stringify(historicoAnalises));
       localStorage.setItem('daniele_profissional', JSON.stringify(profissional));
     }
@@ -907,6 +1018,8 @@
       if (anots) bancoAnotacoesSessao = JSON.parse(anots);
       const evols = localStorage.getItem('daniele_evolucoes');
       if (evols) bancoEvolucoes = JSON.parse(evols);
+      const plans = localStorage.getItem('daniele_planejamentos');
+      if (plans) bancoPlanejamentos = JSON.parse(plans);
       const anals = localStorage.getItem('daniele_analises');
       if (anals) historicoAnalises = JSON.parse(anals);
       const prof = localStorage.getItem('daniele_profissional');
@@ -929,6 +1042,7 @@
       document.getElementById('header-prof-especialidade').innerText = profissional.especialidade;
       document.getElementById('dash-prof-nome').innerText = profissional.nome;
       document.getElementById('evo-prof-display').innerText = profissional.nome;
+      document.getElementById('plan-prof-display').innerText = profissional.nome;
 
       const nomeSemTitulo = profissional.nome.replace(/^(Dra?\.\s*|Profª?\.\s*)/i, '').toUpperCase();
       document.getElementById('pdf-prof-nome').innerText = nomeSemTitulo;
@@ -1079,7 +1193,7 @@
           </div>
           <div class="space-y-2 pt-2 border-t border-rose-50">
             <button onclick="abrirProntuarioAnamnese('${pac.id}')" class="w-full bg-brand-main hover:bg-brand-alt text-white font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center shadow text-xs">
-              <i class="fa-solid fa-folder-open mr-1.5"></i> Abrir Prontuário & Anamnese
+              <i class="fa-solid fa-folder-open mr-1.5"></i> Abrir Prontuário Completo
             </button>
             <div class="flex justify-between items-center text-[11px] pt-1">
               <span class="text-gray-400">Última: ${formatarDataBR(pac.ultimaSessao)}</span>
@@ -1102,6 +1216,7 @@
       document.getElementById('prontuario-nome-paciente').innerText = pac.nome;
       document.getElementById('prontuario-sub-info').innerText = `Data de Nascimento: ${formatarDataBR(pac.nascimento || '2000-01-01')} • Idade: ${idade} anos • Contato: ${pac.telefone || 'Não informado'}`;
       document.getElementById('evo-pac-display').innerText = pac.nome;
+      document.getElementById('plan-pac-display').innerText = pac.nome;
       
       const badgeFaixa = document.getElementById('prontuario-badge-faixa');
       const container = document.getElementById('container-formulario-anamnese');
@@ -1124,9 +1239,11 @@
 
       document.getElementById('nota-sessao-data').value = new Date().toISOString().split('T')[0];
       document.getElementById('evo-data').value = new Date().toISOString().split('T')[0];
+      document.getElementById('plan-data-el').value = new Date().toISOString().split('T')[0];
       
       renderizarListaAnotacoes();
       renderizarListaEvolucoes();
+      renderizarListaPlanejamentos();
 
       alternarAbaProntuario('anamnese');
       switchTab('prontuario-detalhe');
@@ -1136,10 +1253,12 @@
       document.getElementById('aba-conteudo-anamnese').classList.add('hidden');
       document.getElementById('aba-conteudo-evolucoes').classList.add('hidden');
       document.getElementById('aba-conteudo-anotacoes').classList.add('hidden');
+      document.getElementById('aba-conteudo-planejamento').classList.add('hidden');
       
       document.getElementById('subnav-anamnese').className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:text-brand-main transition-all';
       document.getElementById('subnav-evolucoes').className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:text-brand-main transition-all';
       document.getElementById('subnav-anotacoes').className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:text-brand-main transition-all';
+      document.getElementById('subnav-planejamento').className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 hover:text-brand-main transition-all';
 
       document.getElementById(`aba-conteudo-${aba}`).classList.remove('hidden');
       document.getElementById(`subnav-${aba}`).className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-brand-main shadow-sm transition-all';
@@ -1389,7 +1508,7 @@
         return;
       }
 
-      notas.forEach((nota, idx) => {
+      notas.forEach((nota) => {
         const badgeBg = nota.status === 'Concluída' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800';
         const item = document.createElement('div');
         item.className = 'bg-rose-50/50 p-4 rounded-xl border border-rose-100 text-xs space-y-2';
@@ -1404,8 +1523,8 @@
               <button onclick="removerFolhaSessao('${nota.id}')" class="text-red-500 font-semibold hover:underline"><i class="fa-solid fa-trash mr-1"></i> Excluir</button>
             </div>
           </div>
-          <p class="text-gray-700 whitespace-pre-line leading-relaxed"><b>Observações:</b> ${nota.texto || 'Nenhuma anotação registrada.'}</p>
-          ${nota.proximo ? `<p class="text-gray-700"><b>Próximo Atendimento:</b> ${nota.proximo}</p>` : ''}
+          <p class="text-gray-700 whitespace-pre-line leading-relaxed text-justify"><b>Anotações da Sessão:</b> ${nota.texto || 'Nenhuma anotação registrada.'}</p>
+          ${nota.proximo ? `<p class="text-gray-700 text-justify"><b>Próximo Atendimento:</b> ${nota.proximo}</p>` : ''}
           ${nota.arquivo ? `
             <div class="pt-1 flex items-center justify-between text-[11px] text-brand-navy bg-white p-2 rounded border">
               <span><i class="fa-solid fa-paperclip mr-1"></i> Anexo: <b>${nota.arquivo.nome}</b></span>
@@ -1515,20 +1634,20 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="bg-rose-50/40 p-3 rounded-xl border border-rose-100">
               <b class="text-brand-dark block mb-1">Queixa Principal:</b>
-              <p class="text-gray-700">${evo.queixa}</p>
+              <p class="text-gray-700 text-justify">${evo.queixa}</p>
             </div>
             <div class="bg-rose-50/40 p-3 rounded-xl border border-rose-100">
               <b class="text-brand-dark block mb-1">Demanda Trabalhada:</b>
-              <p class="text-gray-700">${evo.demanda}</p>
+              <p class="text-gray-700 text-justify">${evo.demanda}</p>
             </div>
           </div>
           <div>
             <b class="text-brand-dark block mb-1">Descrição da Sessão:</b>
-            <p class="text-gray-700 bg-gray-50 p-3 rounded-xl border">${evo.descricao}</p>
+            <p class="text-gray-700 bg-gray-50 p-3 rounded-xl border text-justify">${evo.descricao}</p>
           </div>
           <div>
             <b class="text-brand-dark block mb-1">Análise Técnica:</b>
-            <p class="text-gray-700 bg-gray-50 p-3 rounded-xl border">${evo.analise}</p>
+            <p class="text-gray-700 bg-gray-50 p-3 rounded-xl border text-justify">${evo.analise}</p>
           </div>
           ${evo.arquivo ? `<div class="text-brand-navy font-semibold"><i class="fa-solid fa-paperclip mr-1"></i> Anexo: ${evo.arquivo.nome}</div>` : ''}
         `;
@@ -1543,7 +1662,125 @@
       renderizarListaEvolucoes();
     }
 
-    // --- GERAR PDFS DOS REGISTROS ---
+    // --- PLANEJAMENTO CLÍNICO E SUPERVISÃO ---
+    function abrirModalPlanejamento() {
+      document.getElementById('form-planejamento-clinico').reset();
+      document.getElementById('plan-data-el').value = new Date().toISOString().split('T')[0];
+      document.getElementById('modal-planejamento').classList.remove('hidden');
+    }
+
+    function fecharModalPlanejamento() {
+      document.getElementById('modal-planejamento').classList.add('hidden');
+    }
+
+    function salvarPlanejamentoClinico(e) {
+      e.preventDefault();
+      if (!pacienteAtualId) return;
+
+      const dataEl = document.getElementById('plan-data-el').value;
+      const dataPrev = document.getElementById('plan-data-prev').value;
+      const status = document.getElementById('plan-status').value;
+      const sinteseAnt = document.getElementById('plan-sintese-ant').value;
+      const objetivos = document.getElementById('plan-objetivos').value;
+      const intervencoes = document.getElementById('plan-intervencoes').value;
+      const indicadores = document.getElementById('plan-indicadores').value;
+      const orientacoes = document.getElementById('plan-orientacoes').value;
+      
+      const supData = document.getElementById('sup-data').value;
+      const supQuestoes = document.getElementById('sup-questoes').value;
+      const supHipoteses = document.getElementById('sup-hipoteses').value;
+      const supRecomendacoes = document.getElementById('sup-recomendacoes').value;
+
+      if (!bancoPlanejamentos[pacienteAtualId]) bancoPlanejamentos[pacienteAtualId] = [];
+
+      const novoPlan = {
+        id: `plan-${Date.now()}`,
+        dataElaboracao: dataEl,
+        dataPrevista: dataPrev,
+        status: status,
+        sinteseAnterior: sinteseAnt,
+        objetivos: objetivos,
+        intervencoes: intervencoes,
+        indicadores: indicadores,
+        orientacoes: orientacoes,
+        supervisao: (supData || supQuestoes || supHipoteses || supRecomendacoes) ? {
+          data: supData,
+          questoes: supQuestoes,
+          hipoteses: supHipoteses,
+          recomendacoes: supRecomendacoes
+        } : null
+      };
+
+      bancoPlanejamentos[pacienteAtualId].unshift(novoPlan);
+      salvarDadosLocalStorage();
+      renderizarListaPlanejamentos();
+      fecharModalPlanejamento();
+      alert(`Planejamento clínico salvo com sucesso (${status})!`);
+    }
+
+    function renderizarListaPlanejamentos() {
+      const lista = document.getElementById('lista-planejamentos-paciente');
+      lista.innerHTML = '';
+      const plans = bancoPlanejamentos[pacienteAtualId] || [];
+
+      if (plans.length === 0) {
+        lista.innerHTML = `<div class="bg-white rounded-2xl p-6 border text-center text-xs text-gray-400 italic">Nenhum planejamento ou supervisão registrado para este paciente.</div>`;
+        return;
+      }
+
+      plans.forEach(plan => {
+        const badgeBg = plan.status === 'Concluída' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800';
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-2xl p-5 border border-rose-100 card-shadow space-y-3 text-xs';
+        card.innerHTML = `
+          <div class="flex justify-between items-center border-b border-rose-50 pb-2">
+            <div class="flex items-center space-x-2">
+              <span class="font-bold text-brand-dark text-sm">Planejamento Clínico</span>
+              <span class="text-gray-400">• Elaboração: ${formatarDataBR(plan.dataElaboracao)}</span>
+              ${plan.dataPrevista ? `<span class="text-gray-400">• Próxima Sessão: ${formatarDataBR(plan.dataPrevista)}</span>` : ''}
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeBg}">${plan.status}</span>
+            </div>
+            <div class="space-x-2">
+              <button onclick="gerarPDFPlanejamento('${plan.id}')" class="bg-rose-50 text-brand-main px-3 py-1.5 rounded-lg font-bold border border-rose-200 hover:bg-rose-100 transition-colors">
+                <i class="fa-solid fa-file-pdf mr-1"></i> Gerar PDF
+              </button>
+              <button onclick="removerPlanejamento('${plan.id}')" class="text-red-500 hover:text-red-700 font-semibold p-1"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="bg-rose-50/40 p-3 rounded-xl border border-rose-100">
+              <b class="text-brand-dark block mb-1">1. Síntese da Sessão Anterior:</b>
+              <p class="text-gray-700 text-justify">${plan.sinteseAnterior || 'Não informada.'}</p>
+            </div>
+            <div class="bg-rose-50/40 p-3 rounded-xl border border-rose-100">
+              <b class="text-brand-dark block mb-1">2. Objetivos Próximas Sessões:</b>
+              <p class="text-gray-700 text-justify">${plan.objetivos || 'Não informados.'}</p>
+            </div>
+          </div>
+          <div>
+            <b class="text-brand-dark block mb-1">3. Planejamento das Intervenções:</b>
+            <p class="text-gray-700 bg-gray-50 p-3 rounded-xl border text-justify">${plan.intervencoes || 'Não informadas.'}</p>
+          </div>
+          ${plan.supervisao ? `
+            <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100 space-y-1">
+              <b class="text-blue-900 block"><i class="fa-solid fa-user-shield mr-1"></i> Registro de Supervisão Clínica (${formatarDataBR(plan.supervisao.data || plan.dataElaboracao)})</b>
+              <p class="text-gray-700 text-justify"><b>Questões:</b> ${plan.supervisao.questoes || 'N/A'} | <b>Hipóteses:</b> ${plan.supervisao.hipoteses || 'N/A'}</p>
+              <p class="text-gray-700 text-justify"><b>Recomendações:</b> ${plan.supervisao.recomendacoes || 'N/A'}</p>
+            </div>
+          ` : ''}
+        `;
+        lista.appendChild(card);
+      });
+    }
+
+    function removerPlanejamento(planId) {
+      if (!confirm("Deseja realmente remover este planejamento?")) return;
+      bancoPlanejamentos[pacienteAtualId] = bancoPlanejamentos[pacienteAtualId].filter(p => p.id !== planId);
+      salvarDadosLocalStorage();
+      renderizarListaPlanejamentos();
+    }
+
+    // --- GERAR PDFS DOS REGISTROS (COM CORREÇÃO DE FORMATAÇÃO E ALINHAMENTO) ---
     function gerarPDFAnamnese() {
       if (!pacienteAtualId) return;
       const pac = MOCK_PACIENTES.find(p => p.id === pacienteAtualId);
@@ -1560,10 +1797,10 @@
       const badgeConfidencial = document.getElementById('pdf-badge-confidencial');
       if (ficha.status === 'Rascunho') {
         badgeConfidencial.innerText = 'DOCUMENTO EM RASCUNHO / INCOMPLETO';
-        badgeConfidencial.className = 'inline-block bg-amber-100 text-amber-800 border border-amber-300 text-[9px] font-extrabold px-2.5 py-1 rounded tracking-wider uppercase';
+        badgeConfidencial.className = 'inline-block bg-amber-100 text-amber-800 border border-amber-300 text-[8.5px] font-extrabold px-2 py-0.5 rounded tracking-wider uppercase';
       } else {
         badgeConfidencial.innerText = 'DOCUMENTO CONFIDENCIAL CONCLUÍDO';
-        badgeConfidencial.className = 'inline-block bg-[#F7EBEF] text-[#B85C83] border border-[#B85C83]/30 text-[9px] font-extrabold px-2.5 py-1 rounded tracking-wider uppercase';
+        badgeConfidencial.className = 'inline-block bg-[#F7EBEF] text-[#B85C83] border border-[#B85C83]/30 text-[8.5px] font-extrabold px-2 py-0.5 rounded tracking-wider uppercase';
       }
 
       const corpo = document.getElementById('pdf-corpo-conteudo');
@@ -1573,8 +1810,8 @@
           const div = document.createElement('div');
           div.className = 'bg-gray-50 border border-gray-100 p-2.5 rounded text-xs pdf-keep-together';
           div.innerHTML = `
-            <span class="font-bold text-[#1A365D] uppercase text-[10px] block border-b pb-0.5 mb-1">${chave.replace(/([A-Z])/g, ' $1')}</span>
-            <p class="text-gray-700 leading-relaxed">${d[chave]}</p>
+            <span class="font-bold text-[#1A365D] uppercase text-[9.5px] block border-b pb-0.5 mb-1">${chave.replace(/([A-Z])/g, ' $1')}</span>
+            <p class="text-gray-700 leading-relaxed text-justify">${d[chave]}</p>
           `;
           corpo.appendChild(div);
         }
@@ -1599,29 +1836,29 @@
       const badgeConfidencial = document.getElementById('pdf-badge-confidencial');
       if (evo.status === 'Rascunho') {
         badgeConfidencial.innerText = 'RASCUNHO DE EVOLUÇÃO';
-        badgeConfidencial.className = 'inline-block bg-amber-100 text-amber-800 border text-[9px] font-extrabold px-2.5 py-1 rounded uppercase';
+        badgeConfidencial.className = 'inline-block bg-amber-100 text-amber-800 border text-[8.5px] font-extrabold px-2 py-0.5 rounded uppercase';
       } else {
         badgeConfidencial.innerText = 'DOCUMENTO CONCLUÍDO';
-        badgeConfidencial.className = 'inline-block bg-emerald-100 text-emerald-800 border text-[9px] font-extrabold px-2.5 py-1 rounded uppercase';
+        badgeConfidencial.className = 'inline-block bg-emerald-100 text-emerald-800 border text-[8.5px] font-extrabold px-2 py-0.5 rounded uppercase';
       }
 
       const corpo = document.getElementById('pdf-corpo-conteudo');
       corpo.innerHTML = `
         <div class="bg-gray-50 border p-3 rounded text-xs pdf-keep-together">
-          <b class="text-[#1A365D] block mb-1">1. Queixa Principal:</b>
-          <p class="text-gray-700 leading-relaxed">${evo.queixa}</p>
+          <b class="text-[#1A365D] block mb-1 uppercase text-[9.5px]">1. Queixa Principal:</b>
+          <p class="text-gray-700 leading-relaxed text-justify">${evo.queixa}</p>
         </div>
         <div class="bg-gray-50 border p-3 rounded text-xs pdf-keep-together">
-          <b class="text-[#1A365D] block mb-1">2. Demanda Trabalhada:</b>
-          <p class="text-gray-700 leading-relaxed">${evo.demanda}</p>
+          <b class="text-[#1A365D] block mb-1 uppercase text-[9.5px]">2. Demanda Trabalhada:</b>
+          <p class="text-gray-700 leading-relaxed text-justify">${evo.demanda}</p>
         </div>
         <div class="bg-gray-50 border p-3 rounded text-xs pdf-keep-together">
-          <b class="text-[#1A365D] block mb-1">3. Descrição da Sessão:</b>
-          <p class="text-gray-700 leading-relaxed">${evo.descricao}</p>
+          <b class="text-[#1A365D] block mb-1 uppercase text-[9.5px]">3. Descrição da Sessão:</b>
+          <p class="text-gray-700 leading-relaxed text-justify">${evo.descricao}</p>
         </div>
         <div class="bg-gray-50 border p-3 rounded text-xs pdf-keep-together">
-          <b class="text-[#1A365D] block mb-1">4. Análise Técnica da Sessão:</b>
-          <p class="text-gray-700 leading-relaxed">${evo.analise}</p>
+          <b class="text-[#1A365D] block mb-1 uppercase text-[9.5px]">4. Análise Técnica da Sessão:</b>
+          <p class="text-gray-700 leading-relaxed text-justify">${evo.analise}</p>
         </div>
       `;
 
@@ -1641,15 +1878,24 @@
       document.getElementById('pdf-paciente-status').innerText = nota.status;
       document.getElementById('pdf-titulo-relatorio').innerText = `FOLHA DE ANOTAÇÕES DA SESSÃO`;
 
+      const badgeConfidencial = document.getElementById('pdf-badge-confidencial');
+      if (nota.status === 'Rascunho') {
+        badgeConfidencial.innerText = 'RASCUNHO DE ANOTAÇÃO';
+        badgeConfidencial.className = 'inline-block bg-amber-100 text-amber-800 border text-[8.5px] font-extrabold px-2 py-0.5 rounded uppercase';
+      } else {
+        badgeConfidencial.innerText = 'DOCUMENTO CONCLUÍDO';
+        badgeConfidencial.className = 'inline-block bg-emerald-100 text-emerald-800 border text-[8.5px] font-extrabold px-2 py-0.5 rounded uppercase';
+      }
+
       const corpo = document.getElementById('pdf-corpo-conteudo');
       corpo.innerHTML = `
         <div class="bg-gray-50 border p-3 rounded text-xs pdf-keep-together">
-          <b class="text-[#1A365D] block mb-1">Anotações da Sessão:</b>
-          <p class="text-gray-700 leading-relaxed">${nota.texto || 'Sem anotações.'}</p>
+          <b class="text-[#1A365D] block mb-1 uppercase text-[9.5px]">Anotações da Sessão:</b>
+          <p class="text-gray-700 leading-relaxed text-justify">${nota.texto || 'Sem anotações.'}</p>
         </div>
         <div class="bg-gray-50 border p-3 rounded text-xs pdf-keep-together">
-          <b class="text-[#1A365D] block mb-1">Pontos Importantes para o Próximo Atendimento:</b>
-          <p class="text-gray-700 leading-relaxed">${nota.proximo || 'Nenhum registro.'}</p>
+          <b class="text-[#1A365D] block mb-1 uppercase text-[9.5px]">Pontos Importantes para o Próximo Atendimento:</b>
+          <p class="text-gray-700 leading-relaxed text-justify">${nota.proximo || 'Nenhum registro.'}</p>
         </div>
       `;
 
@@ -1657,7 +1903,64 @@
       document.getElementById('modal-pdf').classList.remove('hidden');
     }
 
-    // --- ANÁLISE FUNCIONAL (PADRÃO ANTERIOR PRESERVADO) ---
+    function gerarPDFPlanejamento(planId) {
+      const plan = (bancoPlanejamentos[pacienteAtualId] || []).find(p => p.id === planId);
+      if (!plan) return;
+      const pac = MOCK_PACIENTES.find(p => p.id === pacienteAtualId);
+
+      document.getElementById('pdf-emissao-data').innerText = `Emissão: ${new Date().toLocaleString('pt-BR')}`;
+      document.getElementById('pdf-paciente-nome').innerText = pac ? pac.nome : 'Paciente';
+      document.getElementById('pdf-paciente-tema').innerText = `Planejamento & Supervisão`;
+      document.getElementById('pdf-paciente-data').innerText = formatarDataBR(plan.dataElaboracao);
+      document.getElementById('pdf-paciente-status').innerText = plan.status;
+      document.getElementById('pdf-titulo-relatorio').innerText = `FOLHA DE PLANEJAMENTO CLÍNICO E SUPERVISÃO`;
+
+      const badgeConfidencial = document.getElementById('pdf-badge-confidencial');
+      if (plan.status === 'Rascunho') {
+        badgeConfidencial.innerText = 'RASCUNHO DE PLANEJAMENTO';
+        badgeConfidencial.className = 'inline-block bg-amber-100 text-amber-800 border text-[8.5px] font-extrabold px-2 py-0.5 rounded uppercase';
+      } else {
+        badgeConfidencial.innerText = 'DOCUMENTO CONCLUÍDO';
+        badgeConfidencial.className = 'inline-block bg-emerald-100 text-emerald-800 border text-[8.5px] font-extrabold px-2 py-0.5 rounded uppercase';
+      }
+
+      const corpo = document.getElementById('pdf-corpo-conteudo');
+      corpo.innerHTML = `
+        <div class="bg-gray-50 border p-3 rounded text-xs pdf-keep-together">
+          <b class="text-[#1A365D] block mb-1 uppercase text-[9.5px]">1. Síntese da Sessão Anterior:</b>
+          <p class="text-gray-700 leading-relaxed text-justify">${plan.sinteseAnterior || 'Não informada.'}</p>
+        </div>
+        <div class="bg-gray-50 border p-3 rounded text-xs pdf-keep-together">
+          <b class="text-[#1A365D] block mb-1 uppercase text-[9.5px]">2. Objetivos para as Próximas Sessões:</b>
+          <p class="text-gray-700 leading-relaxed text-justify">${plan.objetivos || 'Não informados.'}</p>
+        </div>
+        <div class="bg-gray-50 border p-3 rounded text-xs pdf-keep-together">
+          <b class="text-[#1A365D] block mb-1 uppercase text-[9.5px]">3. Planejamento das Intervenções:</b>
+          <p class="text-gray-700 leading-relaxed text-justify">${plan.intervencoes || 'Não informadas.'}</p>
+        </div>
+        <div class="bg-gray-50 border p-3 rounded text-xs pdf-keep-together">
+          <b class="text-[#1A365D] block mb-1 uppercase text-[9.5px]">4. Indicadores de Acompanhamento:</b>
+          <p class="text-gray-700 leading-relaxed text-justify">${plan.indicadores || 'Não informados.'}</p>
+        </div>
+        <div class="bg-gray-50 border p-3 rounded text-xs pdf-keep-together">
+          <b class="text-[#1A365D] block mb-1 uppercase text-[9.5px]">5. Orientações e Pontos de Atenção:</b>
+          <p class="text-gray-700 leading-relaxed text-justify">${plan.orientacoes || 'Não informadas.'}</p>
+        </div>
+        ${plan.supervisao ? `
+          <div class="bg-blue-50/40 border border-blue-200 p-3 rounded text-xs pdf-keep-together">
+            <b class="text-blue-900 block mb-1 uppercase text-[9.5px]"><i class="fa-solid fa-user-shield mr-1"></i> 6. Registro de Supervisão Clínica:</b>
+            <p class="text-gray-700 text-justify mb-1"><b>Data:</b> ${formatarDataBR(plan.supervisao.data || plan.dataElaboracao)} | <b>Questões:</b> ${plan.supervisao.questoes || 'N/A'}</p>
+            <p class="text-gray-700 text-justify mb-1"><b>Discussões e Hipóteses:</b> ${plan.supervisao.hipoteses || 'N/A'}</p>
+            <p class="text-gray-700 text-justify"><b>Recomendações e Ajustes:</b> ${plan.supervisao.recomendacoes || 'N/A'}</p>
+          </div>
+        ` : ''}
+      `;
+
+      atualizarInterfaceProfissional();
+      document.getElementById('modal-pdf').classList.remove('hidden');
+    }
+
+    // --- ANÁLISE FUNCIONAL (PADRÃO CORRIGIDO) ---
     function gerarEExibirPDF() {
       const paciente = document.getElementById('campo-paciente').value || "Paciente Não Informado";
       const tema = document.getElementById('campo-tema').value || "Análise Geral";
@@ -1672,19 +1975,23 @@
       document.getElementById('pdf-paciente-status').innerText = status;
       document.getElementById('pdf-titulo-relatorio').innerText = `RELATÓRIO DE ANÁLISE FUNCIONAL MOLECULAR`;
 
+      const badgeConfidencial = document.getElementById('pdf-badge-confidencial');
+      badgeConfidencial.innerText = 'DOCUMENTO CONFIDENCIAL';
+      badgeConfidencial.className = 'inline-block bg-[#F7EBEF] text-[#B85C83] border border-[#B85C83]/30 text-[8.5px] font-extrabold px-2 py-0.5 rounded tracking-wider uppercase';
+
       const corpo = document.getElementById('pdf-corpo-conteudo');
       corpo.innerHTML = `
-        <div class="pdf-keep-together mb-3">
-          <h3 class="text-xs font-bold text-[#1A365D] uppercase border-b pb-1 mb-1">1. COMPORTAMENTO-ALVO</h3>
-          <p class="text-xs italic bg-gray-50 p-2 rounded border">${compAlvo}</p>
+        <div class="pdf-keep-together mb-2">
+          <h3 class="text-xs font-bold text-[#1A365D] uppercase border-b pb-0.5 mb-1">1. COMPORTAMENTO-ALVO</h3>
+          <p class="text-xs italic bg-gray-50 p-2.5 rounded border text-justify">${compAlvo}</p>
         </div>
-        <div class="pdf-keep-together mb-3">
-          <h3 class="text-xs font-bold text-[#1A365D] uppercase border-b pb-1 mb-1">2. TRÍPLICE CONTINGÊNCIA</h3>
+        <div class="pdf-keep-together mb-2">
+          <h3 class="text-xs font-bold text-[#1A365D] uppercase border-b pb-0.5 mb-1">2. TRÍPLICE CONTINGÊNCIA</h3>
           <div class="grid grid-cols-2 gap-2 text-xs">
-            <div class="bg-slate-50 p-2 border rounded"><b>A:</b> ${document.getElementById('campo-antecedente-itens').value}</div>
-            <div class="bg-slate-50 p-2 border rounded"><b>R:</b> ${document.getElementById('campo-resposta-itens').value}</div>
-            <div class="bg-slate-50 p-2 border rounded"><b>C:</b> ${document.getElementById('campo-consequencia-itens').value}</div>
-            <div class="bg-slate-50 p-2 border rounded"><b>E:</b> ${document.getElementById('campo-probabilidade').value}</div>
+            <div class="bg-slate-50 p-2 border rounded text-justify"><b>A:</b> ${document.getElementById('campo-antecedente-itens').value}</div>
+            <div class="bg-slate-50 p-2 border rounded text-justify"><b>R:</b> ${document.getElementById('campo-resposta-itens').value}</div>
+            <div class="bg-slate-50 p-2 border rounded text-justify"><b>C:</b> ${document.getElementById('campo-consequencia-itens').value}</div>
+            <div class="bg-slate-50 p-2 border rounded text-justify"><b>E:</b> ${document.getElementById('campo-probabilidade').value}</div>
           </div>
         </div>
       `;
@@ -1702,7 +2009,7 @@
       const nomePaciente = document.getElementById('pdf-paciente-nome').innerText.replace(/\s+/g, '_');
 
       const opcoes = {
-        margin:       [10, 10, 10, 10],
+        margin:       [8, 8, 8, 8],
         filename:     `Documento_Clinico_${nomePaciente}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true, letterRendering: true, logging: false },
@@ -1753,7 +2060,7 @@
       document.getElementById('campo-probabilidade').value = EXEMPLO_ANALISE_TECNICA.probabilidade;
       document.getElementById('campo-efeito-longo').value = EXEMPLO_ANALISE_TECNICA.efeitoLongo;
       document.getElementById('campo-processo').value = EXEMPLO_ANALISE_TECNICA.processo;
-      document.getElementById('campo-confianca').value = EXEMPLO_ANALISE_TECNICA.confianca;
+      document.getElementById('campo-confianca').value = EXEMPLO_ANALISE_TECNica.confianca;
       document.getElementById('campo-evidencias').value = EXEMPLO_ANALISE_TECNICA.evidencias;
       document.getElementById('campo-intervencao').value = EXEMPLO_ANALISE_TECNICA.intervencao;
       document.getElementById('campo-sintese').value = EXEMPLO_ANALISE_TECNICA.sintese;
@@ -1813,6 +2120,7 @@
         anamneses: bancoAnamneses,
         anotacoes: bancoAnotacoesSessao,
         evolucoes: bancoEvolucoes,
+        planejamentos: bancoPlanejamentos,
         analises: historicoAnalises,
         profissional: profissional
       };
